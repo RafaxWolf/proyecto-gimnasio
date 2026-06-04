@@ -117,4 +117,12 @@ public class EntrenadorService {
                 .fechaNacimiento(e.getFechaNacimiento())
                 .build();
     }
+
+    public EntrenadorResponse buscarPorRun(String run){
+        log.info("buscando entrenador por run ",keyValue("run",run));
+        Entrenador e = repository.findByRun(run).orElseThrow(()
+                -> new EntityNotFoundException("Entrenador no Encontrado"));
+        log.info("Se encontro entrenador",keyValue("run",e.getRun()));
+        return mapToResponse(e);
+    }
 }

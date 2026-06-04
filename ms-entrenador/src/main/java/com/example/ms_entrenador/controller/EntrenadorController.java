@@ -48,7 +48,10 @@ public class EntrenadorController {
     )
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<EntrenadorResponse>> findById(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<EntrenadorResponse>> findById(
+                    @Parameter(description = "id del entrenador a consultar", example = "1", required = true)
+                    @PathVariable Long id){
+
         return ResponseEntity.status(200).body(
                 ApiResponse.<EntrenadorResponse>builder().success(true).message("Encontrado")
                         .data(service.findById(id)).build()
@@ -74,7 +77,9 @@ public class EntrenadorController {
     )
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<EntrenadorResponse>> update(@PathVariable Long id, @Valid @RequestBody EntrenadorRequest e) {
+    public ResponseEntity<ApiResponse<EntrenadorResponse>> update(
+            @Parameter(description = "id del entrenador que se desea modificar", example = "1", required = true)
+            @PathVariable Long id, @Valid @RequestBody EntrenadorRequest e) {
 
         return ResponseEntity.ok(
 
@@ -90,13 +95,30 @@ public class EntrenadorController {
     )
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @Parameter(description = "id del entrenador a eliminar ", example = "1", required = true)
+            @PathVariable Long id){
         service.delete(id);
         return ResponseEntity.ok(
 
                 ApiResponse.<Void>builder().success(true).message("Entrenador Eliminado").build()
         );
     }
+    @Operation(
+            summary = "encontrar entrenador proporcionando su run",
+            description = "si el entrenador buscado existe retornara sus datos "
+    )
+    @GetMapping("/buscar-por-run/{run}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<EntrenadorResponse>> buscarPorRun(
+            @Parameter(description = "Run del entrenador a buscar", example = "111-1", required = true)
+            @PathVariable String run){
 
+        return ResponseEntity.ok(ApiResponse.<EntrenadorResponse>builder()
+                .success(true)
+                .data(service.buscarPorRun(run))
+                .build()
+        );
+    }
 
 }
