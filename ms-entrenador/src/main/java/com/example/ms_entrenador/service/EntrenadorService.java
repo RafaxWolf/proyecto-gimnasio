@@ -35,6 +35,13 @@ public class EntrenadorService {
         entrenador1.setNombreCompleto(request.getNombreCompleto());
         entrenador1.setRun(request.getRun());
         entrenador1.setFechaNacimiento(request.getFechaNacimiento());
+        if(repository.existsByRun(entrenador1.getRun())){
+            log.info("Entrenador ya se encuentra registrado",
+                    keyValue("id", entrenador1.getRun())
+            );
+            throw new  IllegalStateException("Entrenador ya se encuentra registrado");
+
+        }
         Entrenador saveEntrenador = repository.save(entrenador1);
         log.info("Entrenador creado correctamente",
                 keyValue("id", saveEntrenador.getId())
@@ -109,5 +116,13 @@ public class EntrenadorService {
                 .run(e.getRun())
                 .fechaNacimiento(e.getFechaNacimiento())
                 .build();
+    }
+
+    public EntrenadorResponse buscarPorRun(String run){
+        log.info("buscando entrenador por run ",keyValue("run",run));
+        Entrenador e = repository.findByRun(run).orElseThrow(()
+                -> new EntityNotFoundException("Entrenador no Encontrado"));
+        log.info("Se encontro entrenador",keyValue("run",e.getRun()));
+        return mapToResponse(e);
     }
 }
