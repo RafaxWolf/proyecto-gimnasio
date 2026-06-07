@@ -39,6 +39,12 @@ public class InscripcionClaseService {
         insClase.setHoraInscripcion(LocalTime.now());
         insClase.setIdClase(ir.getIdClase());
         insClase.setIdCliente(ir.getIdCliente());
+        if(repository.existsByIdClaseAndIdCliente(insClase.getIdClase(), insClase.getIdCliente() )){
+            log.info("cliente ya se encuentra inscrito en la clase",
+                    keyValue("idcliente",insClase.getIdCliente() )
+            );
+            throw new IllegalStateException("Cliente ya se encuentra inscrito en la clase");
+        }
         InscripcionClase claseResp = repository.save(insClase);
         log.info("Inscripción guardada",
                 keyValue("idInscripcion", claseResp.getId())

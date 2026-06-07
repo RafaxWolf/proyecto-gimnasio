@@ -8,6 +8,7 @@ import com.example.ms_inscripcion_clase.dto.InscripcionClaseResponse;
 import com.example.ms_inscripcion_clase.service.InscripcionClaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,14 @@ public class InscripcionClaseController {
             summary = "registrar inscripcion a clase ",
             description = "Recibe los datos necesarios para crear la inscripcion a una clase, se valida y realiza la creación."
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Inscripción creada correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error en los datos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado o token invalido"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tienes permisos suficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "La clase o el cliente proporcionados no existen "),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "El cliente seleccionado ya esta inscrito en la clase")
+    })
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<InscripcionClaseResponse>> add
@@ -47,6 +56,12 @@ public class InscripcionClaseController {
             summary = "encontrar una inscripcion proporcionando su id ",
             description = "permite retornar la inscripcion buscada si existe "
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Inscripcion a clase encontrada "),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado o token invalido"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tienes permisos suficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No se encontro el id de inscripcion buscado")
+    })
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<ApiResponse<InscripcionClaseResponse>> findById(
@@ -80,6 +95,11 @@ public class InscripcionClaseController {
             summary = "obtener a todas las inscripciones a clases registradas ",
             description = "permite retornar una lista de todos las inscripciones a clases que se encuentran registradas "
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "se devuelve listado de inscripciones correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado o token invalido"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tienes permisos suficientes")
+    })
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<ApiResponse<List<InscripcionClaseResponse>>> getAll(@Parameter(hidden = true)@RequestHeader("Authorization") String token){
@@ -94,6 +114,12 @@ public class InscripcionClaseController {
             summary = "eliminar una inscripcion a clase registrada",
             description = "permite eliminar una inscripcion a clase mediante su id "
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Inscripción eliminada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado o token invalido"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tienes permisos suficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No se encontro la clase que buscabas")
+    })
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(
@@ -111,6 +137,12 @@ public class InscripcionClaseController {
             summary = "retornar una lista de clases almacenadas proporcionando su nombre",
             description = "si la clase buscada existe retornara una lista de las clases encontradas por ese nombre "
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Clases coincidentes localizadas con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado o token inválido"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado. Rol no autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No se localizó ninguna clase activa que coincida con el nombre proporcionado")
+    })
     @GetMapping("/buscar-clase-por-nombre/{nombre}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<ApiResponse<List<ClaseResponse>>> findClasePorNombre(
