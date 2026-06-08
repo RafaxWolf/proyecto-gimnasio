@@ -12,7 +12,7 @@ public class ClienteRequest {
     private String apellidos;
     @NotBlank(message = "El run es obligatorio")
     private String run;
-    @NotNull(message = "El correo es Obligatorio")
+    @NotNull(message = "El correo es obligatorio")
     private String correo;
     @NotNull(message = "Debe ingresar el id del plan")
     private Long idPlan;
