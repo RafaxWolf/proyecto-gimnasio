@@ -14,7 +14,7 @@ public class PlanesClient {
 
     private final String BASE_URL = "http://localhost:8087/api/v2/planes/";
 
-    public PlanesResponse getEntrenador(Long id, String token) {
+    public PlanesResponse getPlan(Long id, String token) {
 
         ApiResponse<PlanesResponse> response = webClient.get()
                 .uri(BASE_URL + id)
