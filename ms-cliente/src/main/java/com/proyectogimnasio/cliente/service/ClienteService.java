@@ -22,7 +22,7 @@ public class ClienteService {
     private final PlanesClient client;
 
     //metodo para agregar clientes
-    private ClienteResponse add(ClienteRequest c, String token){
+    public ClienteResponse add(ClienteRequest c, String token){
         log.info("Anadir Cliente", keyValue("cliente", c.getNombres()));//cuando se agrega un cliente se usa el log para poder dejar guardada la accion
         var plan = client.getPlan(c.getIdPlan(), token);
         //si es que el plan no existe, el metodo va a advertir de ello y no va a seguir
