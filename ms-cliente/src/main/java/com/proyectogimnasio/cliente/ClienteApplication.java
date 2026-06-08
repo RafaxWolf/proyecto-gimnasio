@@ -1,13 +1,13 @@
-package com.example.ms_cliente;
+package com.proyectogimnasio.cliente;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MsClienteApplication {
+public class ClienteApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MsClienteApplication.class, args);
+		SpringApplication.run(ClienteApplication.class, args);
 	}
 
 }
