@@ -2,6 +2,10 @@ package com.proyectogimnasio.cliente.dto;
 
 import com.example.ms_planes.model.Pagos;
 
+import lombok.Data;
+
+
+@Data
 public class PlanesResponse {
     private Long id;
     private String nombrePlan;
