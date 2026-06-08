@@ -75,6 +75,19 @@ public class ClienteService {
         return mapToResponse(updateCliente,token);
 
     }
+    public void delete(Long id){
+        log.info("Eliminando cliente",
+                keyValue("idCliente", id));
+        //esto es una validacion de que realmente existe el cliente que se quiere eliminar
+        if(!repo.existsById(id)){
+            log.warn("Cliente a eliminar inexistente",
+                    keyValue("idCliente", id));
+            throw new EntityNotFoundException("No se puede eliminar un cliente inexistente")
+        }
+        repo.deleteById(id);
+        log.info("Cliente eliminado correctamente",
+                keyValue("idClase",id));
+    }
 
 
 
