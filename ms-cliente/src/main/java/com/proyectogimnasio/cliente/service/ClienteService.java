@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
 
 @Service
@@ -43,14 +45,22 @@ public class ClienteService {
 
 
     }
+    public List<ClienteResponse> getAll(String token){
+        log.info("Listando clientes");
+        //esto es para que retorne todos los clientes en base a la estructura del maptoresponse
+        return repo.findAll().stream()
+                .map(c -> mapToResponse(c,token))
+                .toList();
+    }
 
 
 
-//mapToResponse sirve para que todo quede ordenado o mapeado para que cuando se retorne, muestre los datos del cliente
+    //El maptoresponse sirve para establecer una estructura para cuando se retorne los datos del modelo, en este caso cliente
     private ClienteResponse mapToResponse(Cliente c, String token) {
         log.info("Mapeando cliente",
                 keyValue("idCliente", c.getId())
         );
+        //llama al client para conseguir la id del plan
         var plan1 = client.getPlan(c.getIdPlan(), token);
 
 
