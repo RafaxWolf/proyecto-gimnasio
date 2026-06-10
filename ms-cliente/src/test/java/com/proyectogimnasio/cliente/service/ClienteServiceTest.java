@@ -3,7 +3,8 @@ package com.proyectogimnasio.cliente.service;
 import com.proyectogimnasio.cliente.client.PlanesClient;
 import com.proyectogimnasio.cliente.dto.ClienteRequest;
 import com.proyectogimnasio.cliente.dto.ClienteResponse;
-import com.example.ms_planes.dto.PlanesResponse;
+
+import com.proyectogimnasio.cliente.dto.PlanesResponse;
 import com.proyectogimnasio.cliente.model.Cliente;
 import com.proyectogimnasio.cliente.repository.ClienteRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,7 +28,7 @@ public class ClienteServiceTest {
     private ClienteRepository repo;
 
     @Mock
-    private com.proyectogimnasio.cliente.client.PlanesClient client;
+    private PlanesClient client;
 
     @InjectMocks
     private ClienteService service;
@@ -76,7 +77,7 @@ public class ClienteServiceTest {
         // Arrange
         Cliente cliente = new Cliente(1L, "vicentito", "garcia", "7.435.565-9", "vicentito.garcia1@gmail.com", LocalDate.of(2007, 12, 1), 1L);
         when(repo.findAll()).thenReturn(List.of(cliente));
-        var planMock = new PlanesResponse(1L, "Plan Mensual", 29990, null);
+        var planMock = new PlanesResponse();
         when(client.getPlan(anyLong(), anyString())).thenReturn(planMock);
 
         // Act

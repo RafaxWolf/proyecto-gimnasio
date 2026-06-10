@@ -1,8 +1,8 @@
 package com.proyectogimnasio.cliente.client;
 
 
-import com.proyectogimnasio.planes.dto.ApiResponse;
-import com.proyectogimnasio.planes.dto.PlanesResponse;
+import com.proyectogimnasio.cliente.dto.ApiResponse;
+import com.proyectogimnasio.cliente.dto.PlanesResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,7 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class PlanesClient {
     private final WebClient webClient;
 
-    private final String BASE_URL = "http://localhost:8087/api/v2/planes/";
+    private final String BASE_URL = "http://localhost:8087/api/v3/planes/";
 
     public PlanesResponse getPlan(Long id, String token) {
 

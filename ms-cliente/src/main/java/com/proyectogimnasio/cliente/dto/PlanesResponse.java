@@ -1,6 +1,6 @@
 package com.proyectogimnasio.cliente.dto;
 
-import com.example.ms_planes.model.Pagos;
+import com.proyectogimnasio.planes.model.Pagos;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 public class PlanesResponse {
     private Long id;
     private String nombrePlan;
-    private Integer precioPlan;
-    private Pagos Pagos;
+    private Double precioPlan;
+    private String descripcionPlan;
+    private String beneficios;
+    private Pagos tipoPago;
 }
