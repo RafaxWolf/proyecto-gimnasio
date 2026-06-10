@@ -12,8 +12,8 @@ import lombok.*;
 public class PagosResponse {
     private Long idPago;
     private String tipoPago;
-    private Integer numeroTarjeta;
-    private String fechaCaducidad;
+    private Double numTarjeta;
+    private String fechaVencimiento;
     private Integer cvc;
     private String direccionFacturacion;
     private String codigoPostal;

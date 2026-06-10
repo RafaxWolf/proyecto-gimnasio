@@ -18,6 +18,7 @@ public class Pagos {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pago_id")
     private Long id;
+    private String tipoPago;
     private Double numTarjeta;
     private String fechaVencimiento;
     private Integer cvc;
