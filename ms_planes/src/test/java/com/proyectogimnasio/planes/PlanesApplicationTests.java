@@ -1,10 +1,10 @@
-package com.example.ms_planes;
+package com.proyectogimnasio.planes;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MsPlanesApplicationTests {
+class PlanesApplicationTests {
 
 	@Test
 	void contextLoads() {

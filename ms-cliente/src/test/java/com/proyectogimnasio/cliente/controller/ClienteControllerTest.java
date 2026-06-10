@@ -48,7 +48,6 @@ class ClienteControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Lo creamos manualmente y le registramos el soporte para fechas de Java 8
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
@@ -119,7 +118,7 @@ class ClienteControllerTest {
                         .header("Authorization", "Bearer token-falso")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
-                        .with(csrf())) // <--- Clave para evitar el 403 en PUT
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Cliente Actualizado"))
@@ -134,8 +133,8 @@ class ClienteControllerTest {
 
         // Act & Assert
         mockMvc.perform(delete("/api/v3/clientes/1")
-                        .header("Authorization", "Bearer token-valido") // Añadido por consistencia si tu filtro lo requiere
-                        .with(csrf())) // <--- ¡Faltaba aquí en tu DELETE!
+                        .header("Authorization", "Bearer token-valido")
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Cliente eliminado"));

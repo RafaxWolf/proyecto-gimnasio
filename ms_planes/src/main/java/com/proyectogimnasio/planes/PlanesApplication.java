@@ -1,13 +1,13 @@
-package com.example.ms_planes;
+package com.proyectogimnasio.planes;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MsPlanesApplication {
+public class PlanesApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MsPlanesApplication.class, args);
+		SpringApplication.run(PlanesApplication.class, args);
 	}
 
 }
