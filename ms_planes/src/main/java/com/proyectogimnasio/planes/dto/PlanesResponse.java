@@ -10,7 +10,7 @@ import lombok.*;
 public class PlanesResponse {
     private Long id;
     private String nombrePlan;
-    private Integer precioPlan;
+    private Double precioPlan;
     private String descripcionPlan;
     private String beneficios;
     private Pagos tipoPago;

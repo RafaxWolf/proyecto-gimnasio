@@ -15,7 +15,7 @@ public class Planes {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nombrePlan;
-    private String precioPlan;
+    private Double precioPlan;
     private String descripcionPlan;
     private String beneficios;
     @OneToOne(cascade = CascadeType.MERGE)

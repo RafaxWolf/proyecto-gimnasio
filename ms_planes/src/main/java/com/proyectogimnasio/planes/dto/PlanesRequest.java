@@ -11,7 +11,7 @@ public class PlanesRequest {
     @NotBlank(message = "El nombre no puede quedar vacio")
     private String nombrePlan;
     @NotNull(message = "Debe ingresar el precio del plan")
-    private Integer precioPlan;
+    private Double precioPlan;
     @NotBlank(message = "Debe agregar una descripcion valida")
     private String descripcionPlan;
     @NotBlank(message = "Debe agregar los beneficios")
