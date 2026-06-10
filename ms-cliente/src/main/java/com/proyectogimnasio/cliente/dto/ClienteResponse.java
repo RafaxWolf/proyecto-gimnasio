@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ClienteResponse extends Cliente {
+public class ClienteResponse {
     private Long id;
     private String nombres;
     private String apellidos;

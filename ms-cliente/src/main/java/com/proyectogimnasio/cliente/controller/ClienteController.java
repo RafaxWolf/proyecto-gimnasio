@@ -3,13 +3,11 @@ package com.proyectogimnasio.cliente.controller;
 import com.proyectogimnasio.cliente.dto.ApiResponse;
 import com.proyectogimnasio.cliente.dto.ClienteRequest;
 import com.proyectogimnasio.cliente.dto.ClienteResponse;
-import com.proyectogimnasio.cliente.model.Cliente;
 import com.proyectogimnasio.cliente.service.ClienteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -81,11 +79,11 @@ public class ClienteController {
     }
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public ResponseEntity<ApiResponse<EntityModel<Cliente>>> obtener(@PathVariable Long id, String token) {
+    public ResponseEntity<ApiResponse<EntityModel<ClienteResponse>>> obtener(@PathVariable Long id, String token) {
 
-        Cliente cliente = service.findById(id, token);
+        ClienteResponse cliente = service.findById(id, token);
 
-        EntityModel<Cliente> recurso = EntityModel.of(cliente);
+        EntityModel<ClienteResponse> recurso = EntityModel.of(cliente);
 
         recurso.add(
                 linkTo(methodOn(ClienteController.class).obtener(id, token))
@@ -108,9 +106,9 @@ public class ClienteController {
         );
 
         return ResponseEntity.ok(
-                ApiResponse.<EntityModel<Cliente>>builder()
+                ApiResponse.<EntityModel<ClienteResponse>>builder() // <-- Corregido aquí
                         .success(true)
-                        .message("Autor obtenido")
+                        .message("Cliente obtenido")
                         .data(recurso)
                         .build()
         );

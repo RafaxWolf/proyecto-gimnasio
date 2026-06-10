@@ -116,6 +116,7 @@ public class ClienteService {
                 run(c.getRun()).
                 correo(c.getCorreo()).
                 idPlan(c.getIdPlan()).
+                fechaNac(c.getFechaNac()).
                 build();
 
     }

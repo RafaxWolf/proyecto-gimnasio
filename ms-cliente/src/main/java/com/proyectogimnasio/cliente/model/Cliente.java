@@ -1,6 +1,5 @@
 package com.proyectogimnasio.cliente.model;
 
-import com.example.ms_entrenador.model.Entrenador;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
