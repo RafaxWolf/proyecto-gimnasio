@@ -2,7 +2,6 @@ package com.proyectogimnasio.cliente.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.proyectogimnasio.cliente.dto.ApiResponse;
 import com.proyectogimnasio.cliente.dto.ClienteRequest;
 import com.proyectogimnasio.cliente.dto.ClienteResponse;
 import com.proyectogimnasio.cliente.service.ClienteService;

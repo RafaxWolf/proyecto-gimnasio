@@ -15,7 +15,7 @@ spring:
   flyway:
     enabled: false
 jwt:
-  secret: clave_super_secreta_12345678901234567890
+  secret: 1234567890123456789012345678901234567890
 logging:
   level:
     org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLogger: WARN
