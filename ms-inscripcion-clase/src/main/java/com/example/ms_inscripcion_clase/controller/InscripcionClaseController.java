@@ -105,7 +105,7 @@ public class InscripcionClaseController {
         return ResponseEntity.ok(recurso);
 
     }
-    
+
     @Operation(
             summary = "obtener a todas las inscripciones a clases registradas ",
             description = "permite retornar una lista de todos las inscripciones a clases que se encuentran registradas "

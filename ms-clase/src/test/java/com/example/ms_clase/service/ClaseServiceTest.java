@@ -45,10 +45,9 @@ public class ClaseServiceTest {
         cRequest.setCupos(10);
         cRequest.setEstado(true);
         cRequest.setIdEntrenador(2L);
-
         Clase clase = new Clase(1L,"tenis","para todos",
-                "inicial",
-                LocalDate.parse("2026-08-16"),LocalTime.parse("16:00:00"),
+                "inicial", LocalDate.parse("2026-08-16"),
+                LocalTime.parse("16:00:00"),
                 10,true,2L);
         when(repository.save(any(Clase.class))).thenReturn(clase);
         EntrenadorResponse e1 = new EntrenadorResponse();
@@ -56,7 +55,6 @@ public class ClaseServiceTest {
         e1.setRun("111-1");
         e1.setFechaNacimiento(LocalDate.parse("1992-05-12"));
         when(entrenadorClient.getEntrenador(2L,"1111")).thenReturn(e1);
-
         ClaseResponse respuesta = service.add(cRequest,"1111");
         assertNotNull(respuesta);
         assertEquals(1L,respuesta.getId());
