@@ -1,0 +1,167 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+      - proyectogimnasio_db_data:/var/lib/mysql
+    networks:
+      - backend-network
+    healthcheck:
+      test: [ "CMD","mysqladmin","ping","-h","localhost" ]
+      timeout: 20s
+      retries: 10
+
+  auth:
+    build: ./ms-auth
+    container_name: auth
+    ports:
+      - "8082:8082"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_auth?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  clase:
+    build: ./ms-clase
+    container_name: clase
+    ports:
+      - "8094:8094"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_clase?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  cliente:
+    build: ./ms-cliente
+    container_name: cliente
+    ports:
+      - "8083:8083"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_cliente?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  encargado:
+    build: ./ms-encargado
+    container_name: encargado
+    ports:
+      - "8090:8090"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_encargado?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  entrenador:
+    build: ./ms-entrenador
+    container_name: entrenador
+    ports:
+      - "8093:8093"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_entrenador?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  inscripcion-clase:
+    build: ./ms-inscripcion-clase
+    container_name: inscripcion-clase
+    ports:
+      - "8092:8092"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_inscripcionclase?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  inventario:
+    build: ./ms-inventario
+    container_name: inventario
+    ports:
+      - "8086:8086"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_inventario?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  mantenimiento:
+    build: ./ms-mantenimiento
+    container_name: mantenimiento
+    ports:
+      - "8089:8089"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_mantenimiento?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  rutina:
+    build: ./ms-rutina
+    container_name: rutina
+    ports:
+      - "8088:8088"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_rutina?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  sede:
+    build: ./ms-sede
+    container_name: sede
+    ports:
+      - "8084:8084"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_sede?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+  planes:
+    build: ./ms_planes
+    container_name: planes
+    ports:
+      - "8087:8087"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_planes?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
+
+
+
+
+volumes:
+  proyectogimnasio_db_data:
