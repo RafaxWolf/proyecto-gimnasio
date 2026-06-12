@@ -17,4 +17,4 @@ debug: true
 server:
   port: 8087
 jwt:
-  secret: 1234567890123456789012345678901234567890
+  secret: ${JWT_SECRET}
