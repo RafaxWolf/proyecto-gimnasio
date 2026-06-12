@@ -28,6 +28,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_auth?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   clase:
     build: ./ms-clase
     container_name: clase
@@ -40,6 +41,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_clase?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   cliente:
     build: ./ms-cliente
     container_name: cliente
@@ -52,6 +54,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_cliente?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   encargado:
     build: ./ms-encargado
     container_name: encargado
@@ -64,6 +67,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_encargado?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   entrenador:
     build: ./ms-entrenador
     container_name: entrenador
@@ -76,6 +80,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_entrenador?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   inscripcion-clase:
     build: ./ms-inscripcion-clase
     container_name: inscripcion-clase
@@ -88,6 +93,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_inscripcionclase?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   inventario:
     build: ./ms-inventario
     container_name: inventario
@@ -100,6 +106,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_inventario?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   mantenimiento:
     build: ./ms-mantenimiento
     container_name: mantenimiento
@@ -112,6 +119,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_mantenimiento?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   rutina:
     build: ./ms-rutina
     container_name: rutina
@@ -124,6 +132,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_rutina?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   sede:
     build: ./ms-sede
     container_name: sede
@@ -136,6 +145,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_sede?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
   planes:
     build: ./ms_planes
     container_name: planes
@@ -148,6 +158,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_planes?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: 1234567890123456789012345678901234567890
 
 
 
