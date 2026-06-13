@@ -5,7 +5,7 @@ import com.proyectogimnasio.rutina.dto.RutinaResponse;
 import com.proyectogimnasio.rutina.dto.RutinaRequest;
 import com.proyectogimnasio.rutina.service.RutinaService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class RutinaController {
 
         return ResponseEntity.status(201).body(
                 ApiResponse.<RutinaResponse>builder().success(true)
-                        .message("Rutina creada")
+                        .message("Rutina armada y creada exitosamente")
                         .data(service.addRutina(r, token)).build()
 
         );
@@ -132,7 +132,7 @@ public class RutinaController {
         service.deleteRutina(id);
         return ResponseEntity.ok(
 
-                ApiResponse.<Void>builder().success(true).message("Rutina Eliminado").build()
+                ApiResponse.<Void>builder().success(true).message("Rutina eliminada correctamente").build()
         );
     }
 }

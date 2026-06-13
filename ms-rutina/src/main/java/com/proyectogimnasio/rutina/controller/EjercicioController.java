@@ -38,7 +38,7 @@ public class EjercicioController {
 
         return ResponseEntity.status(201).body(
                 ApiResponse.<EjercicioResponse>builder().success(true)
-                        .message("Ejercicio creado")
+                        .message("Ejercicio creado en el catálogo")
                         .data(service.addEjercicio(e, token)).build()
 
         );
