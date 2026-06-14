@@ -1,13 +1,15 @@
 package com.proyectogimnasio.rutina.config;
 
+
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.proyectogimnasio.rutina.dto.ApiResponse;
 import com.proyectogimnasio.rutina.security.JwtFilter;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,11 +17,9 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity
-@EnableJpaRepositories(basePackages = "com.proyectogimnasio.rutina.repository")
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -31,7 +31,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated()
+                .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**"
+                ).permitAll()
+                .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(accessDeniedHandler())
@@ -73,6 +78,4 @@ public class SecurityConfig {
             new ObjectMapper().writeValue(response.getOutputStream(), res);
         };
     }
-
-
 }
