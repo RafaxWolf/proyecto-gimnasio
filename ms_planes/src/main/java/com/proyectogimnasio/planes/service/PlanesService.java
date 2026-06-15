@@ -25,15 +25,11 @@ public class PlanesService {
 
     public PlanesResponse addPlan(PlanesRequest p, String token) {
         log.info("Crear Planes", keyValue("nombre", p.getNombrePlan()));
-        Pagos pago = pagosRepository.findById(p.getIdPago())
-                .orElseThrow(() -> new EntityNotFoundException("El método de pago especificado no existe"));
-
         Planes planes1 = new Planes();
         planes1.setNombrePlan(p.getNombrePlan());
         planes1.setPrecioPlan(p.getPrecioPlan());
         planes1.setDescripcionPlan(p.getDescripcionPlan());
         planes1.setBeneficios(p.getBeneficios());
-        planes1.setIdPago(pago);
 
         Planes savePlan = planesRepository.save(planes1);
         return mapToResponsePlan(savePlan, token);
@@ -88,14 +84,11 @@ public class PlanesService {
         log.info("Actualizar Planes", keyValue("idPlan", id));
         Planes planes1 = planesRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Plan no encontrado"));
 
-        Pagos pago = pagosRepository.findById(p.getIdPago())
-                .orElseThrow(() -> new EntityNotFoundException("El método de pago especificado no existe"));
 
         planes1.setNombrePlan(p.getNombrePlan());
         planes1.setPrecioPlan(p.getPrecioPlan());
         planes1.setDescripcionPlan(p.getDescripcionPlan());
         planes1.setBeneficios(p.getBeneficios());
-        planes1.setIdPago(pago);
 
         Planes updatePlan = planesRepository.save(planes1);
         log.info("Plan actualizado correctamente", keyValue("idPlan", updatePlan.getId()));
@@ -148,7 +141,6 @@ public class PlanesService {
                 .precioPlan(p.getPrecioPlan())
                 .descripcionPlan(p.getDescripcionPlan())
                 .beneficios(p.getBeneficios())
-                .idPago(p.getIdPago() != null ? p.getIdPago().getId() : null)
                 .build();
     }
 

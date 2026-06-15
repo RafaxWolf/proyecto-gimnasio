@@ -17,7 +17,5 @@ public class PlanesRequest {
     private String descripcionPlan;
     @NotBlank(message = "Debe agregar los beneficios")
     private String beneficios;
-    @Valid
-    @NotNull(message = "El id debe ser valido")
-    private Long idPago;
+
 }
