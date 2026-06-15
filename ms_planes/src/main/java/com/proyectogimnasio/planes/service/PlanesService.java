@@ -4,13 +4,17 @@ import com.proyectogimnasio.planes.client.ClienteClient;
 import com.proyectogimnasio.planes.dto.*;
 import com.proyectogimnasio.planes.model.Pagos;
 import com.proyectogimnasio.planes.model.Planes;
+import com.proyectogimnasio.planes.model.Suscripcion;
 import com.proyectogimnasio.planes.repository.PagosRepository;
 import com.proyectogimnasio.planes.repository.PlanesRepository;
+import com.proyectogimnasio.planes.repository.SuscripcionRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
@@ -21,6 +25,7 @@ import static net.logstash.logback.argument.StructuredArguments.keyValue;
 public class PlanesService {
     private final PlanesRepository planesRepository;
     private final PagosRepository pagosRepository;
+    private final SuscripcionRepository suscripcionRepository;
     private final ClienteClient client;
 
     public PlanesResponse addPlan(PlanesRequest p, String token) {
@@ -132,6 +137,102 @@ public class PlanesService {
             throw new EntityNotFoundException("No se puede eliminar un metodo de pago inexistente");
         }
         pagosRepository.deleteById(id);
+    }
+    @Transactional
+    public SuscripcionResponse crearSuscripcion(SuscripcionRequest request, String token) {
+        log.info("Iniciando creación de suscripción automática", keyValue("idCliente", request.getIdCliente()));
+
+        var cliente = client.getCliente(request.getIdCliente(), token);
+        if (cliente == null) {
+            throw new EntityNotFoundException("El cliente especificado no existe en el sistema.");
+        }
+
+        Planes plan = planesRepository.findById(request.getIdPlan())
+                .orElseThrow(() -> new EntityNotFoundException("El plan especificado no existe en el catálogo."));
+
+        Pagos pago = new Pagos();
+        pago.setTipoPago(request.getPago().getTipoPago());
+        pago.setNumTarjeta(request.getPago().getNumTarjeta());
+        pago.setFechaVencimiento(request.getPago().getFechaVencimiento());
+        pago.setCvc(request.getPago().getCvc());
+        pago.setDireccionFacturacion(request.getPago().getDireccionFacturacion());
+        pago.setCodigoPostal(request.getPago().getCodigoPostal());
+        pago.setIdCliente(request.getIdCliente());
+        pagosRepository.save(pago);
+
+        Suscripcion suscripcion = new Suscripcion();
+        suscripcion.setIdCliente(request.getIdCliente());
+        suscripcion.setPlan(plan);
+        suscripcion.setPago(pago);
+        suscripcion.setFechaInicio(LocalDate.now());
+        suscripcion.setFechaFin(LocalDate.now().plusMonths(1));
+        suscripcion.setEstado("ACTIVA");
+
+        Suscripcion saveSuscripcion = suscripcionRepository.save(suscripcion);
+        log.info("Suscripción procesada y guardada correctamente", keyValue("idSuscripcion", saveSuscripcion.getId()));
+
+        return mapToResponseSuscripcion(saveSuscripcion, token);
+    }
+    public List<SuscripcionResponse> getAllSuscripciones(String token) {
+        log.info("Obteniendo listado de todas las suscripciones");
+        return suscripcionRepository.findAll().stream()
+                .map(suscripcion -> mapToResponseSuscripcion(suscripcion, token))
+                .toList();
+    }
+
+    public SuscripcionResponse getSuscripcionByCliente(Long idCliente, String token) {
+        log.info("Buscando suscripción del cliente", keyValue("idCliente", idCliente));
+        Suscripcion suscripcion = suscripcionRepository.findByIdCliente(idCliente)
+                .orElseThrow(() -> new EntityNotFoundException("El cliente no tiene ninguna suscripción registrada"));
+        return mapToResponseSuscripcion(suscripcion, token);
+    }
+
+    @Transactional
+    public SuscripcionResponse updateSuscripcion(Long id, String nuevoEstado, String token) {
+        log.info("Actualizando estado de suscripción", keyValue("idSuscripcion", id), keyValue("nuevoEstado", nuevoEstado));
+
+        Suscripcion suscripcion = suscripcionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Suscripción no encontrada"));
+
+        suscripcion.setEstado(nuevoEstado.toUpperCase());
+
+        if ("CANCELADA".equals(suscripcion.getEstado())) {
+            suscripcion.setFechaFin(java.time.LocalDate.now());
+        }
+
+        Suscripcion actualizada = suscripcionRepository.save(suscripcion);
+        return mapToResponseSuscripcion(actualizada, token);
+    }
+
+    @Transactional
+    public void deleteSuscripcion(Long id) {
+        log.info("Eliminando suscripción del sistema", keyValue("idSuscripcion", id));
+        if (!suscripcionRepository.existsById(id)) {
+            throw new EntityNotFoundException("No se puede eliminar una suscripción inexistente");
+        }
+        suscripcionRepository.deleteById(id);
+    }
+    private SuscripcionResponse mapToResponseSuscripcion(Suscripcion s, String token) {
+        ClienteResponse datosCliente = null;
+        try {
+            datosCliente = client.getCliente(s.getIdCliente(), token);
+        } catch (Exception e) {
+            log.error("No se pudieron obtener los datos detallados del cliente externo", e);
+            datosCliente = new ClienteResponse();
+            datosCliente.setNombres("Desconocido (Error de comunicación)");
+            datosCliente.setApellidos("");
+        }
+
+        // 2. Construimos la respuesta completa
+        return SuscripcionResponse.builder()
+                .id(s.getId())
+                .idCliente(s.getIdCliente())
+                .plan(mapToResponsePlan(s.getPlan(), token))
+                .pago(mapToResponsePago(s.getPago(), token))
+                .fechaInicio(s.getFechaInicio())
+                .fechaFin(s.getFechaFin())
+                .estado(s.getEstado())
+                .build();
     }
 
     private PlanesResponse mapToResponsePlan(Planes p, String token) {
