@@ -25,4 +25,13 @@ public class PlanesClient {
 
         return response != null ? response.getData() : null;
     }
+    public Object activarSuscripcion(Object suscripcionRequest, String token) {
+        return webClient.post()
+                .uri("http://localhost:8087/api/v1/suscripciones")
+                .header("Authorization", token)
+                .bodyValue(suscripcionRequest)
+                .retrieve()
+                .bodyToMono(Object.class)
+                .block();
+    }
 }

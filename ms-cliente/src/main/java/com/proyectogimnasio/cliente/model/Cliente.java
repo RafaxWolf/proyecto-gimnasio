@@ -21,4 +21,5 @@ public class Cliente {
     private String run;
     private String correo;
     private LocalDate fechaNac;
+    private Long idPlan;
 }

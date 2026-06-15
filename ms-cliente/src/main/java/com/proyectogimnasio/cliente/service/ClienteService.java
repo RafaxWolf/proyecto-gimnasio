@@ -9,8 +9,10 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
 
@@ -21,13 +23,13 @@ public class ClienteService {
     private final ClienteRepository repo;
     private final PlanesClient client;
 
-
+    @Transactional
     public ClienteResponse add(ClienteRequest c, String token){
-        log.info("Anadir Cliente", keyValue("cliente", c.getNombres()));
-        var plan = client.getPlan(c.getIdPlan(), token);
+        log.info("Añadir Cliente e iniciar proceso de suscripción", keyValue("cliente", c.getNombres()));
 
+        var plan = client.getPlan(c.getIdPlan(), token);
         if(plan == null){
-            log.warn("Plan no existe", keyValue("idPlan", c.getIdPlan()));
+            log.warn("Plan no existe en el catálogo", keyValue("idPlan", c.getIdPlan()));
             throw new EntityNotFoundException("Plan no encontrado");
         }
 
@@ -40,46 +42,55 @@ public class ClienteService {
         cliente1.setFechaNac(c.getFechaNac());
 
         Cliente saveCliente = repo.save(cliente1);
-        log.info("Cliente creado correctamente", keyValue("idCliente", saveCliente.getId()));
+        log.info("Cliente guardado en BD local", keyValue("idCliente", saveCliente.getId()));
+
+        try {
+            Map<String, Object> suscripcionPayload = Map.of(
+                    "idCliente", saveCliente.getId(),
+                    "idPlan", c.getIdPlan(),
+                    "pago", c.getPago()
+            );
+
+
+            client.activarSuscripcion(suscripcionPayload, token);
+            log.info("Suscripción y pago procesados con éxito en microservicio remoto");
+
+        } catch (Exception e) {
+            log.error("Error crítico: No se pudo activar la suscripción o el pago fue rechazado", e);
+
+            throw new RuntimeException("El registro del cliente ha sido cancelado porque el método de pago falló o no pudo ser procesado.");
+        }
+
         ClienteResponse response = mapToResponse(saveCliente);
         response.setDetallesPlan(plan);
         return response;
     }
 
-    public ClienteResponse findById(Long id, String token) {
-        log.info("Buscar cliente", keyValue("idCliente", id));
-        Cliente cliente = repo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
 
-
+    public ClienteResponse findById(Long id, String token){
+        Cliente cliente = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
         ClienteResponse response = mapToResponse(cliente);
-
         try {
-            var plan = client.getPlan(cliente.getIdPlan(), token);
-            response.setDetallesPlan(plan);
+            response.setDetallesPlan(client.getPlan(cliente.getIdPlan(), token));
         } catch (Exception e) {
-            log.error("No se pudo obtener el detalle del plan desde el microservicio", e);
+            log.error("Error al traer plan", e);
         }
-
         return response;
     }
 
     public List<ClienteResponse> getAll(String token){
-        log.info("Listando clientes");
         return repo.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
+                .map(cliente -> {
+                    ClienteResponse res = mapToResponse(cliente);
+                    try { res.setDetallesPlan(client.getPlan(cliente.getIdPlan(), token)); } catch (Exception e) {}
+                    return res;
+                }).toList();
     }
 
     public ClienteResponse update(Long id, ClienteRequest c, String token){
-        log.info("Actualizando Cliente", keyValue("idCliente", id));
-        Cliente cliente1 = repo.findById(id).orElseThrow(()->new EntityNotFoundException("Cliente no encontrado"));
+        Cliente cliente1 = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
         var plan = client.getPlan(c.getIdPlan(), token);
-
-        if(plan == null){
-            log.warn("Plan no encontrado", keyValue("idPlan", c.getIdPlan()));
-            throw new EntityNotFoundException("Plan no encontrado");
-        }
+        if(plan == null) throw new EntityNotFoundException("Plan no encontrado");
 
         cliente1.setNombres(c.getNombres());
         cliente1.setApellidos(c.getApellidos());
@@ -89,19 +100,16 @@ public class ClienteService {
         cliente1.setFechaNac(c.getFechaNac());
 
         Cliente updateCliente = repo.save(cliente1);
-        log.info("Cliente actualizado correctamente", keyValue("idCliente", updateCliente.getId()));
-        return mapToResponse(updateCliente);
+        ClienteResponse response = mapToResponse(updateCliente);
+        response.setDetallesPlan(plan);
+        return response;
     }
 
     public void delete(Long id){
-        log.info("Eliminando cliente", keyValue("idCliente", id));
-        if(!repo.existsById(id)){
-            log.warn("Cliente a eliminar inexistente", keyValue("idCliente", id));
-            throw new EntityNotFoundException("No se puede eliminar un cliente nonexistent");
-        }
+        if(!repo.existsById(id)) throw new EntityNotFoundException("Cliente no encontrado");
         repo.deleteById(id);
-        log.info("Cliente eliminado correctamente", keyValue("idCliente", id));
     }
+
     private ClienteResponse mapToResponse(Cliente c) {
         return ClienteResponse.builder()
                 .id(c.getId())
@@ -113,5 +121,4 @@ public class ClienteService {
                 .fechaNac(c.getFechaNac())
                 .build();
     }
-
 }

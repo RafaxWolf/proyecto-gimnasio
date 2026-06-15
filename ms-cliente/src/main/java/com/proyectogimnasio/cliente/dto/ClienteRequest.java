@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Past;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @Data
 public class ClienteRequest {
@@ -22,4 +23,7 @@ public class ClienteRequest {
     private LocalDate fechaNac;
     @NotNull(message = "Debe ingresar el id del plan")
     private Long idPlan;
+
+    @NotNull(message = "Debe incluir los datos de pago para activar la suscripción")
+    private Map<String, Object> pago;
 }
