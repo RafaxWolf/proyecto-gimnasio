@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: ms-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: ms-auth
+              uri: lb://ms-auth
+              predicates:
+                - Path=/auth/**
+
+            - id: ms-entrenador
+              uri: lb://ms-entrenador
+              predicates:
+                - Path=/api/v1/entrenadores/**
+
+            - id: ms-clase
+              uri: lb://ms-clase
+              predicates:
+                - Path=/api/v1/clases/**
+
+            - id: ms-inscripcion-clase
+              uri: lb://ms-inscripcion-clase
+              predicates:
+                - Path=/api/v1/inscripcion-clases/**
+
+            - id: ms-cliente
+              uri: lb://ms-cliente
+              predicates:
+                - Path=/api/v3/clientes/**
+
+            - id: ms-rutina
+              uri: lb://ms-rutina
+              predicates:
+                - Path=/api/v3/rutinas/**
+                - Path=/api/v3/ejercicios/**
+
+            - id: ms-planes
+              uri: lb://ms-planes
+              predicates:
+                - Path=/api/v3/planes/**
+                - Path=/api/v2/pagos/**
+                - Path=/api/v3/suscripciones/**
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  # Corrección de mapeo: Las URLs deben ser interceptadas válidamente por los 'Path' de arriba
+  microservices:
+    definitions:
+      - name: ms-auth
+        url: /auth/v3/api-docs
+      - name: ms-cliente
+        url: /api/v3/clientes/v3/api-docs
+      - name: ms-planes
+        url: /api/v3/planes/v3/api-docs
+      - name: ms-rutina
+        url: /api/v3/rutinas/v3/api-docs
+
+server:
+  port: 8099
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
