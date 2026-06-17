@@ -34,13 +34,18 @@ public class EjercicioController {
     })
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<EjercicioResponse>> addEjercicios(@Valid @RequestBody EjercicioRequest e){
+    public ResponseEntity<ApiResponse<List<EjercicioResponse>>> addEjercicios(@Valid @RequestBody List<EjercicioRequest> ejerciciosRequest){
+
+        List<EjercicioResponse> ejerciciosCreados = ejerciciosRequest.stream()
+                .map(service::addEjercicio)
+                .toList();
 
         return ResponseEntity.status(201).body(
-                ApiResponse.<EjercicioResponse>builder().success(true)
-                        .message("Ejercicio creado en el catálogo")
-                        .data(service.addEjercicio(e)).build()
-
+                ApiResponse.<List<EjercicioResponse>>builder()
+                        .success(true)
+                        .message("Ejercicios creados exitosamente en el catálogo masivo")
+                        .data(ejerciciosCreados)
+                        .build()
         );
 
     }
