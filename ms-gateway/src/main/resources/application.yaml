@@ -54,7 +54,7 @@ spring:
               uri: http://rutina:8088
               predicates:
                 - Path=/api/v3/ejercicios/**
-                -
+
             - id: ms-sede
               uri: lb://ms-sede
               predicates:

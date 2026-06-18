@@ -102,7 +102,7 @@ services:
       - backend-network
 
   # ---- MICROSERVICIO RUTINA ----
-  routine:
+  rutina:
     build: ./ms-rutina
     container_name: rutina
     ports:
