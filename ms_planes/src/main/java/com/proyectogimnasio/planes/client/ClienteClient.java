@@ -20,7 +20,7 @@ public class ClienteClient {
 
     public ClienteResponse getCliente(Long id) {
         ApiResponse<ClienteResponse> response = webClient.get()
-                .uri(baseUrl + "/api/v3/clientes/" + id )
+                .uri(baseUrl + "/api/v3/clientes/" + id)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ApiResponse<ClienteResponse>>() {})
                 .block();

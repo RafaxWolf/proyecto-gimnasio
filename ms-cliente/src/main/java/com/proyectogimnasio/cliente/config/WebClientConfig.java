@@ -1,5 +1,6 @@
 package com.proyectogimnasio.cliente.config;
 
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -13,7 +14,8 @@ import jakarta.servlet.http.HttpServletRequest;
 public class WebClientConfig {
 
     @Bean
-    public WebClient webClient() {
+    @LoadBalanced // <-- ESTO ES CLAVE: Le enseña a WebClient a usar los nombres de Eureka (ms-planes)
+    public WebClient.Builder webClientBuilder() {
         return WebClient.builder()
                 .filter((request, next) -> {
                     ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -30,7 +32,6 @@ public class WebClientConfig {
                         }
                     }
                     return next.exchange(request);
-                })
-                .build();
+                });
     }
 }

@@ -77,16 +77,32 @@ public class ClienteService {
 
 
     public ClienteResponse findById(Long id){
-        Cliente cliente = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
-        ClienteResponse response = mapToResponse(cliente);
-        try {
-            response.setDetallesPlan(client.getPlan(cliente.getIdPlan()));
-        } catch (Exception e) {
-            log.error("Error al traer plan", e);
+        Cliente c = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+        ClienteResponse response = mapToResponse(c);
+
+        var plan = client.getPlan(c.getIdPlan());
+
+        if (plan != null) {
+            try {
+                // Buscamos la suscripción activa asociada a este cliente específico
+                Object respuestaSuscripcion = client.getSuscripcionPorCliente(c.getId());
+                if (respuestaSuscripcion instanceof Map) {
+                    Map<?, ?> body = (Map<?, ?>) respuestaSuscripcion;
+                    Map<?, ?> data = (Map<?, ?>) body.get("data");
+
+                    if (data != null && data.get("pago") != null) {
+                        // Seteamos el objeto de pago recuperado dentro de los detalles del plan
+                        plan.setIdPago(data.get("pago"));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error al traer el pago de la suscripción para el cliente {}", c.getId(), e);
+            }
+            response.setDetallesPlan(plan);
         }
+
         return response;
     }
-
     public List<ClienteResponse> getAll(){
         return repo.findAll().stream()
                 .map(cliente -> {
@@ -128,6 +144,22 @@ public class ClienteService {
 
         Cliente updateCliente = repo.save(cliente1);
         ClienteResponse response = mapToResponse(updateCliente);
+        if (plan != null) {
+            try {
+                Object respuestaSuscripcion = client.getSuscripcionPorCliente(updateCliente.getId());
+                if (respuestaSuscripcion instanceof Map) {
+                    Map<?, ?> body = (Map<?, ?>) respuestaSuscripcion;
+                    Map<?, ?> data = (Map<?, ?>) body.get("data"); // Entramos al "data" de la ApiResponse
+
+                    if (data != null && data.get("pago") != null) {
+                        // Seteamos el objeto de pago completo que tiene el id de la BD
+                        plan.setIdPago(data.get("pago"));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error al traer el pago de la suscripción en el update", e);
+            }
+        }
         response.setDetallesPlan(plan);
         return response;
     }

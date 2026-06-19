@@ -101,16 +101,24 @@ public class RutinaService {
         rutina.setNombreRutina(request.getNombreRutina());
         rutina.setDescripcionRutina(request.getDescripcionRutina());
 
-        if (rutina.getDetalles() != null) {
-            rutina.getDetalles().clear();
-            rutinaRepository.saveAndFlush(rutina);
-        }
-
+        // Borramos el bloque viejo de clear individual y lo hacemos de forma segura:
         if (request.getDetalles() != null && !request.getDetalles().isEmpty()) {
+            // 1. Procesamos los nuevos detalles en una lista temporal
             Set<DetallesEjercicio> nuevosDetalles = procesarDetallesRequest(request.getDetalles(), rutina);
-            rutina.setDetalles(nuevosDetalles);
+
+            // 2. Limpiamos la colección original SIN romper su referencia en memoria
+            rutina.getDetalles().clear();
+
+            // 3. Agregamos los nuevos elementos dentro del mismo Set que Hibernate ya conoce
+            rutina.getDetalles().addAll(nuevosDetalles);
+        } else {
+            // Si el request mandó los detalles vacíos, simplemente limpiamos
+            if (rutina.getDetalles() != null) {
+                rutina.getDetalles().clear();
+            }
         }
 
+        // 4. Guardamos la entidad
         Rutina saveRutina = rutinaRepository.save(rutina);
         log.info("Rutina actualizada exitosamente", keyValue("idRutina", saveRutina.getId()));
         return mapToResponseRutina(saveRutina);
