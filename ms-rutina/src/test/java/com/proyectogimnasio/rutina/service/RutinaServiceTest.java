@@ -1,10 +1,8 @@
 package com.proyectogimnasio.rutina.service;
 
 import com.proyectogimnasio.rutina.dto.*;
-import com.proyectogimnasio.rutina.model.DetallesEjercicio;
 import com.proyectogimnasio.rutina.model.Ejercicio;
 import com.proyectogimnasio.rutina.model.Rutina;
-import com.proyectogimnasio.rutina.repository.DetallesEjercicioRepository;
 import com.proyectogimnasio.rutina.repository.EjercicioRepository;
 import com.proyectogimnasio.rutina.repository.RutinaRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -14,7 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -32,17 +29,12 @@ class RutinaServiceTest {
     @Mock
     private RutinaRepository rutinaRepository;
 
-    @Mock
-    private DetallesEjercicioRepository detallesEjercicioRepository;
+
 
     @InjectMocks
     private RutinaService service;
 
-    private final String TOKEN_PRUEBA = "Bearer token-ejemplo";
 
-    // =========================================================================
-    // TRATAMIENTO Y PRUEBAS: RUTINAS (MÉTODOS PUBLICOS Y BIFURCACIONES PRIVADAS)
-    // =========================================================================
 
     @Test
     void debeAgregarRutinaSinDetallesExitosamente() {
@@ -50,13 +42,13 @@ class RutinaServiceTest {
         RutinaRequest request = new RutinaRequest();
         request.setNombreRutina("Cardio Lunes");
         request.setDescripcionRutina("Quemas grasa rápido");
-        request.setDetalles(null); // Validamos rama sin detalles
+        request.setDetalles(null);
 
         Rutina rutinaGuardada = new Rutina(1L, "Cardio Lunes", "Quemas grasa rápido", null);
         when(rutinaRepository.save(any(Rutina.class))).thenReturn(rutinaGuardada);
 
         // Act
-        RutinaResponse resultado = service.addRutina(request, TOKEN_PRUEBA);
+        RutinaResponse resultado = service.addRutina(request);
 
         // Assert
         assertNotNull(resultado);
@@ -86,7 +78,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.findById(5L)).thenReturn(Optional.of(ejercicioGlobal));
 
         // Act
-        RutinaResponse resultado = service.addRutina(request, TOKEN_PRUEBA);
+        RutinaResponse resultado = service.addRutina(request);
 
         // Assert
         assertNotNull(resultado);
@@ -108,7 +100,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> service.addRutina(request, TOKEN_PRUEBA));
+        assertThrows(EntityNotFoundException.class, () -> service.addRutina(request));
     }
 
     @Test
@@ -118,7 +110,7 @@ class RutinaServiceTest {
         when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
 
         // Act
-        RutinaResponse resultado = service.findRutina(1L, TOKEN_PRUEBA);
+        RutinaResponse resultado = service.findRutina(1L);
 
         // Assert
         assertNotNull(resultado);
@@ -131,7 +123,7 @@ class RutinaServiceTest {
         when(rutinaRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> service.findRutina(1L, TOKEN_PRUEBA));
+        assertThrows(EntityNotFoundException.class, () -> service.findRutina(1L));
     }
 
     @Test
@@ -144,7 +136,7 @@ class RutinaServiceTest {
         when(rutinaRepository.findAll()).thenReturn(listaMock);
 
         // Act
-        List<RutinaResponse> resultado = service.getRutinas(TOKEN_PRUEBA);
+        List<RutinaResponse> resultado = service.getRutinas();
 
         // Assert
         assertEquals(2, resultado.size());
@@ -179,7 +171,7 @@ class RutinaServiceTest {
         when(rutinaRepository.save(any(Rutina.class))).thenReturn(rutinaExistente);
 
         // Act
-        RutinaResponse resultado = service.updateRutina(1L, request, TOKEN_PRUEBA);
+        RutinaResponse resultado = service.updateRutina(1L, request);
 
         // Assert
         assertNotNull(resultado);
@@ -196,7 +188,7 @@ class RutinaServiceTest {
         when(rutinaRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> service.updateRutina(1L, new RutinaRequest(), TOKEN_PRUEBA));
+        assertThrows(EntityNotFoundException.class, () -> service.updateRutina(1L, new RutinaRequest()));
     }
 
     @Test
@@ -235,7 +227,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.save(any(Ejercicio.class))).thenReturn(ejercicioGuardado);
 
         // Act
-        EjercicioResponse resultado = service.addEjercicio(request, TOKEN_PRUEBA);
+        EjercicioResponse resultado = service.addEjercicio(request);
 
         // Assert
         assertNotNull(resultado);
@@ -250,7 +242,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.findById(1L)).thenReturn(Optional.of(ejercicio));
 
         // Act
-        EjercicioResponse resultado = service.findEjercicio(1L, TOKEN_PRUEBA);
+        EjercicioResponse resultado = service.findEjercicio(1L);
 
         // Assert
         assertNotNull(resultado);
@@ -263,7 +255,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> service.findEjercicio(1L, TOKEN_PRUEBA));
+        assertThrows(EntityNotFoundException.class, () -> service.findEjercicio(1L));
     }
 
     @Test
@@ -273,7 +265,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.findAll()).thenReturn(listaMock);
 
         // Act
-        List<EjercicioResponse> resultado = service.getEjercicios(TOKEN_PRUEBA);
+        List<EjercicioResponse> resultado = service.getEjercicios();
 
         // Assert
         assertEquals(1, resultado.size());
@@ -293,7 +285,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.save(any(Ejercicio.class))).thenAnswer(i -> i.getArgument(0));
 
         // Act
-        EjercicioResponse resultado = service.updateEjercicio(1L, request, TOKEN_PRUEBA);
+        EjercicioResponse resultado = service.updateEjercicio(1L, request);
 
         // Assert
         assertNotNull(resultado);
@@ -307,7 +299,7 @@ class RutinaServiceTest {
         when(ejercicioRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> service.updateEjercicio(1L, new EjercicioRequest(), TOKEN_PRUEBA));
+        assertThrows(EntityNotFoundException.class, () -> service.updateEjercicio(1L, new EjercicioRequest()));
     }
 
     @Test

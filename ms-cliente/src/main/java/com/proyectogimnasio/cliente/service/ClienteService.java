@@ -9,8 +9,10 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
 
@@ -21,16 +23,17 @@ public class ClienteService {
     private final ClienteRepository repo;
     private final PlanesClient client;
 
+    @Transactional
+    public ClienteResponse add(ClienteRequest c){
+        log.info("Añadir Cliente e iniciar proceso de suscripción", keyValue("cliente", c.getNombres()));
 
-    public ClienteResponse add(ClienteRequest c, String token){
-        log.info("Anadir Cliente", keyValue("cliente", c.getNombres()));
-        var plan = client.getPlan(c.getIdPlan(), token);
-
+        // 1. Obtener el plan base del catálogo
+        var plan = client.getPlan(c.getIdPlan());
         if(plan == null){
-            log.warn("Plan no existe", keyValue("idPlan", c.getIdPlan()));
             throw new EntityNotFoundException("Plan no encontrado");
         }
 
+        // 2. Guardar el cliente para obtener su ID
         Cliente cliente1 = new Cliente();
         cliente1.setNombres(c.getNombres());
         cliente1.setApellidos(c.getApellidos());
@@ -38,48 +41,99 @@ public class ClienteService {
         cliente1.setCorreo(c.getCorreo());
         cliente1.setIdPlan(c.getIdPlan());
         cliente1.setFechaNac(c.getFechaNac());
+        Cliente clienteGuardado = repo.save(cliente1);
 
-        Cliente saveCliente = repo.save(cliente1);
-        log.info("Cliente creado correctamente", keyValue("idCliente", saveCliente.getId()));
-        ClienteResponse response = mapToResponse(saveCliente);
-        response.setDetallesPlan(plan);
-        return response;
-    }
-
-    public ClienteResponse findById(Long id, String token) {
-        log.info("Buscar cliente", keyValue("idCliente", id));
-        Cliente cliente = repo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
-
-
-        ClienteResponse response = mapToResponse(cliente);
+        // 3. Crear la suscripción y enviar los datos de pago a ms-planes
+        Map<String, Object> suscripcionRequest = Map.of(
+                "idCliente", clienteGuardado.getId(),
+                "idPlan", clienteGuardado.getIdPlan(),
+                "pago", c.getPago()
+        );
 
         try {
-            var plan = client.getPlan(cliente.getIdPlan(), token);
-            response.setDetallesPlan(plan);
+            // Llamamos a ms-planes. Este endpoint devuelve un ApiResponse con la SuscripcionResponse completa
+            Object respuestaSuscripcion = client.activarSuscripcion(suscripcionRequest);
+
+            // Extraemos de forma segura el objeto de pago que generó ms-planes
+            if (respuestaSuscripcion instanceof Map) {
+                Map<?, ?> body = (Map<?, ?>) respuestaSuscripcion;
+                Map<?, ?> data = (Map<?, ?>) body.get("data"); // Entramos al "data" del ApiResponse
+
+                if (data != null && data.get("pago") != null) {
+                    // Asignamos el objeto de pago real (que ya contiene el ID de la base de datos de planes)
+                    plan.setIdPago(data.get("pago"));
+                }
+            }
         } catch (Exception e) {
-            log.error("No se pudo obtener el detalle del plan desde el microservicio", e);
+            log.error("Error al activar la suscripción o recuperar el pago", e);
+            plan.setIdPago(null);
+        }
+
+        // 4. Mapear y responder
+        ClienteResponse response = mapToResponse(clienteGuardado);
+        response.setDetallesPlan(plan); // 'plan' ahora lleva el objeto pago enriquecido
+        return response;
+    }
+
+
+    public ClienteResponse findById(Long id){
+        Cliente c = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+        ClienteResponse response = mapToResponse(c);
+
+        var plan = client.getPlan(c.getIdPlan());
+
+        if (plan != null) {
+            try {
+                // Buscamos la suscripción activa asociada a este cliente específico
+                Object respuestaSuscripcion = client.getSuscripcionPorCliente(c.getId());
+                if (respuestaSuscripcion instanceof Map) {
+                    Map<?, ?> body = (Map<?, ?>) respuestaSuscripcion;
+                    Map<?, ?> data = (Map<?, ?>) body.get("data");
+
+                    if (data != null && data.get("pago") != null) {
+                        // Seteamos el objeto de pago recuperado dentro de los detalles del plan
+                        plan.setIdPago(data.get("pago"));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error al traer el pago de la suscripción para el cliente {}", c.getId(), e);
+            }
+            response.setDetallesPlan(plan);
         }
 
         return response;
     }
-
-    public List<ClienteResponse> getAll(String token){
-        log.info("Listando clientes");
+    public List<ClienteResponse> getAll(){
         return repo.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
+                .map(cliente -> {
+                    ClienteResponse res = mapToResponse(cliente);
+
+                    // 1. Obtener datos estáticos del catálogo
+                    var plan = client.getPlan(cliente.getIdPlan());
+
+                    if (plan != null) {
+                        // 2. Consultar el nuevo endpoint que acabamos de crear en ms-planes
+                        Object respuestaSuscripcion = client.getSuscripcionPorCliente(cliente.getId());
+
+                        if (respuestaSuscripcion instanceof Map) {
+                            Map<?, ?> body = (Map<?, ?>) respuestaSuscripcion;
+                            Map<?, ?> data = (Map<?, ?>) body.get("data"); // Entramos al "data" de la ApiResponse
+
+                            if (data != null && data.get("pago") != null) {
+                                // Seteamos el objeto de pago completo que tiene el id_pago de la BD
+                                plan.setIdPago(data.get("pago"));
+                            }
+                        }
+                        res.setDetallesPlan(plan);
+                    }
+                    return res;
+                }).toList();
     }
 
-    public ClienteResponse update(Long id, ClienteRequest c, String token){
-        log.info("Actualizando Cliente", keyValue("idCliente", id));
-        Cliente cliente1 = repo.findById(id).orElseThrow(()->new EntityNotFoundException("Cliente no encontrado"));
-        var plan = client.getPlan(c.getIdPlan(), token);
-
-        if(plan == null){
-            log.warn("Plan no encontrado", keyValue("idPlan", c.getIdPlan()));
-            throw new EntityNotFoundException("Plan no encontrado");
-        }
+    public ClienteResponse update(Long id, ClienteRequest c){
+        Cliente cliente1 = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+        var plan = client.getPlan(c.getIdPlan());
+        if(plan == null) throw new EntityNotFoundException("Plan no encontrado");
 
         cliente1.setNombres(c.getNombres());
         cliente1.setApellidos(c.getApellidos());
@@ -89,19 +143,32 @@ public class ClienteService {
         cliente1.setFechaNac(c.getFechaNac());
 
         Cliente updateCliente = repo.save(cliente1);
-        log.info("Cliente actualizado correctamente", keyValue("idCliente", updateCliente.getId()));
-        return mapToResponse(updateCliente);
+        ClienteResponse response = mapToResponse(updateCliente);
+        if (plan != null) {
+            try {
+                Object respuestaSuscripcion = client.getSuscripcionPorCliente(updateCliente.getId());
+                if (respuestaSuscripcion instanceof Map) {
+                    Map<?, ?> body = (Map<?, ?>) respuestaSuscripcion;
+                    Map<?, ?> data = (Map<?, ?>) body.get("data"); // Entramos al "data" de la ApiResponse
+
+                    if (data != null && data.get("pago") != null) {
+                        // Seteamos el objeto de pago completo que tiene el id de la BD
+                        plan.setIdPago(data.get("pago"));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error al traer el pago de la suscripción en el update", e);
+            }
+        }
+        response.setDetallesPlan(plan);
+        return response;
     }
 
     public void delete(Long id){
-        log.info("Eliminando cliente", keyValue("idCliente", id));
-        if(!repo.existsById(id)){
-            log.warn("Cliente a eliminar inexistente", keyValue("idCliente", id));
-            throw new EntityNotFoundException("No se puede eliminar un cliente nonexistent");
-        }
+        if(!repo.existsById(id)) throw new EntityNotFoundException("Cliente no encontrado");
         repo.deleteById(id);
-        log.info("Cliente eliminado correctamente", keyValue("idCliente", id));
     }
+
     private ClienteResponse mapToResponse(Cliente c) {
         return ClienteResponse.builder()
                 .id(c.getId())
@@ -113,5 +180,4 @@ public class ClienteService {
                 .fechaNac(c.getFechaNac())
                 .build();
     }
-
 }

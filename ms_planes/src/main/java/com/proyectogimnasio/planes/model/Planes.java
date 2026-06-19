@@ -20,7 +20,4 @@ public class Planes {
     private BigDecimal precioPlan;
     private String descripcionPlan;
     private String beneficios;
-    @OneToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "pago_id", referencedColumnName = "pago_id")
-    private Pagos idPago;
 }

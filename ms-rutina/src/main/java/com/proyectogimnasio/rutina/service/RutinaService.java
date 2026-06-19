@@ -4,7 +4,6 @@ import com.proyectogimnasio.rutina.dto.*;
 import com.proyectogimnasio.rutina.model.DetallesEjercicio;
 import com.proyectogimnasio.rutina.model.Ejercicio;
 import com.proyectogimnasio.rutina.model.Rutina;
-import com.proyectogimnasio.rutina.repository.DetallesEjercicioRepository;
 import com.proyectogimnasio.rutina.repository.EjercicioRepository;
 import com.proyectogimnasio.rutina.repository.RutinaRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,10 +24,10 @@ import static net.logstash.logback.argument.StructuredArguments.keyValue;
 public class RutinaService {
     private final EjercicioRepository ejercicioRepository;
     private final RutinaRepository rutinaRepository;
-    private final DetallesEjercicioRepository detallesEjercicioRepository;
+
 
     @Transactional
-    public RutinaResponse addRutina(RutinaRequest request, String token) {
+    public RutinaResponse addRutina(RutinaRequest request) {
         log.info("Crear Rutina", keyValue("nombre", request.getNombreRutina()));
 
         Rutina rutina = new Rutina();
@@ -45,11 +43,11 @@ public class RutinaService {
         }
 
         log.info("Rutina creada exitosamente", keyValue("idRutina", saveRutina.getId()));
-        return mapToResponseRutina(saveRutina, token);
+        return mapToResponseRutina(saveRutina);
     }
 
     @Transactional
-    public EjercicioResponse addEjercicio(EjercicioRequest request, String token) {
+    public EjercicioResponse addEjercicio(EjercicioRequest request) {
         log.info("Crear Ejercicio", keyValue("nombre", request.getNombreEjercicio()));
 
         Ejercicio ejercicio = new Ejercicio();
@@ -59,43 +57,43 @@ public class RutinaService {
 
         Ejercicio saveEjercicio = ejercicioRepository.save(ejercicio);
         log.info("Ejercicio creado exitosamente", keyValue("idEjercicio", saveEjercicio.getId()));
-        return mapToResponseEjercicio(saveEjercicio, token);
+        return mapToResponseEjercicio(saveEjercicio);
     }
 
     @Transactional(readOnly = true)
-    public RutinaResponse findRutina(Long id, String token) {
+    public RutinaResponse findRutina(Long id) {
         log.info("Buscar rutina", keyValue("idRutina", id));
         Rutina rutina = rutinaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rutina no encontrada"));
-        return mapToResponseRutina(rutina, token);
+        return mapToResponseRutina(rutina);
     }
 
     @Transactional(readOnly = true)
-    public EjercicioResponse findEjercicio(Long id, String token) {
+    public EjercicioResponse findEjercicio(Long id) {
         log.info("Buscar ejercicio", keyValue("idEjercicio", id));
         Ejercicio ejercicio = ejercicioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Ejercicio no encontrado"));
-        return mapToResponseEjercicio(ejercicio, token);
+        return mapToResponseEjercicio(ejercicio);
     }
 
     @Transactional(readOnly = true)
-    public List<RutinaResponse> getRutinas(String token) {
+    public List<RutinaResponse> getRutinas() {
         log.info("Listando rutinas");
         return rutinaRepository.findAll().stream()
-                .map(rutina -> mapToResponseRutina(rutina, token))
+                .map(rutina -> mapToResponseRutina(rutina))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<EjercicioResponse> getEjercicios(String token) {
+    public List<EjercicioResponse> getEjercicios() {
         log.info("Listando ejercicios del catálogo global");
         return ejercicioRepository.findAll().stream()
-                .map(ejercicio -> mapToResponseEjercicio(ejercicio, token))
+                .map(ejercicio -> mapToResponseEjercicio(ejercicio))
                 .toList();
     }
 
     @Transactional
-    public RutinaResponse updateRutina(Long id, RutinaRequest request, String token) {
+    public RutinaResponse updateRutina(Long id, RutinaRequest request) {
         log.info("Actualizando rutina", keyValue("idRutina", id));
         Rutina rutina = rutinaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rutina no encontrada"));
@@ -103,24 +101,31 @@ public class RutinaService {
         rutina.setNombreRutina(request.getNombreRutina());
         rutina.setDescripcionRutina(request.getDescripcionRutina());
 
-        // Limpiamos los detalles anteriores para evitar inconsistencias o duplicados en la actualización
-        if (rutina.getDetalles() != null) {
-            rutina.getDetalles().clear();
-            rutinaRepository.saveAndFlush(rutina);
-        }
-
+        // Borramos el bloque viejo de clear individual y lo hacemos de forma segura:
         if (request.getDetalles() != null && !request.getDetalles().isEmpty()) {
+            // 1. Procesamos los nuevos detalles en una lista temporal
             Set<DetallesEjercicio> nuevosDetalles = procesarDetallesRequest(request.getDetalles(), rutina);
-            rutina.setDetalles(nuevosDetalles);
+
+            // 2. Limpiamos la colección original SIN romper su referencia en memoria
+            rutina.getDetalles().clear();
+
+            // 3. Agregamos los nuevos elementos dentro del mismo Set que Hibernate ya conoce
+            rutina.getDetalles().addAll(nuevosDetalles);
+        } else {
+            // Si el request mandó los detalles vacíos, simplemente limpiamos
+            if (rutina.getDetalles() != null) {
+                rutina.getDetalles().clear();
+            }
         }
 
+        // 4. Guardamos la entidad
         Rutina saveRutina = rutinaRepository.save(rutina);
         log.info("Rutina actualizada exitosamente", keyValue("idRutina", saveRutina.getId()));
-        return mapToResponseRutina(saveRutina, token);
+        return mapToResponseRutina(saveRutina);
     }
 
     @Transactional
-    public EjercicioResponse updateEjercicio(Long id, EjercicioRequest request, String token) {
+    public EjercicioResponse updateEjercicio(Long id, EjercicioRequest request) {
         log.info("Actualizando ejercicio", keyValue("idEjercicio", id));
         Ejercicio ejercicio = ejercicioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Ejercicio no encontrado"));
@@ -131,7 +136,7 @@ public class RutinaService {
 
         Ejercicio saveEjercicio = ejercicioRepository.save(ejercicio);
         log.info("Ejercicio actualizado exitosamente", keyValue("idEjercicio", saveEjercicio.getId()));
-        return mapToResponseEjercicio(saveEjercicio, token);
+        return mapToResponseEjercicio(saveEjercicio);
     }
 
     @Transactional
@@ -172,7 +177,7 @@ public class RutinaService {
         }).collect(Collectors.toSet());
     }
 
-    private RutinaResponse mapToResponseRutina(Rutina rutina, String token) {
+    private RutinaResponse mapToResponseRutina(Rutina rutina) {
         List<DetallesEjercicioResponse> detallesMapped = List.of();
         if (rutina.getDetalles() != null) {
             detallesMapped = rutina.getDetalles().stream()
@@ -187,7 +192,7 @@ public class RutinaService {
                 .build();
     }
 
-    private EjercicioResponse mapToResponseEjercicio(Ejercicio ejercicio, String token) {
+    private EjercicioResponse mapToResponseEjercicio(Ejercicio ejercicio) {
         return EjercicioResponse.builder()
                 .id(ejercicio.getId())
                 .nombreEjercicio(ejercicio.getNombreEjercicio())

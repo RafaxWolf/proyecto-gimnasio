@@ -1,146 +1,61 @@
 services:
-  db:
-    image: mysql:8.0
-    container_name: mysql_db
-    environment:
-      MYSQL_ROOT_PASSWORD: root
+  # ---- INFRAESTRUCTURA: EUREKA SERVER ----
+  ms-eureka:
+    build: ./ms-eureka
+    container_name: ms-eureka
+    restart: unless-stopped
     ports:
-      - "3306:3306"
-    volumes:
-      - ./init:/docker-entrypoint-initdb.d
-      - proyectogimnasio_db_data:/var/lib/mysql
-    networks:
-      - backend-network
+      - "8761:8761"
+    environment:
+      # 🔄 MODIFICADO: Máximo de la JVM sintonizado a 256m para estabilidad bajo carga
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     healthcheck:
-      test: [ "CMD","mysqladmin","ping","-h","localhost" ]
-      timeout: 20s
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/ || exit 1"]
+      interval: 5s
+      timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Techo de memoria asignado a 350M
+          memory: 350M
+    networks:
+      - backend-network
 
-
-  cliente:
-    build: ./ms-cliente
-    container_name: cliente
+  # ---- INFRAESTRUCTURA: SPRING CLOUD GATEWAY ----
+  ms-gateway:
+    build: ./ms-gateway
+    container_name: ms-gateway
+    restart: unless-stopped
     ports:
-      - "8083:8083"
+      - "8099:8099"
     depends_on:
-      - mysql-cliente
-      - ms-eureka
+      ms-eureka:
+        condition: service_healthy
     environment:
-      DB_HOST: mysql-cliente
-      DB_PORT: 3306
-      DB_NAME: db_cliente
-      DB_USER: root
-      DB_PASSWORD: root
-      JWT_SECRET: "1234567890123456789012345678901234567890"
       EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Ajustado para evitar cuellos de botella en el ruteo de peticiones
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Subido a 350M
+          memory: 350M
     networks:
       - backend-network
 
-  encargado:
-    build: ./ms-encargado
-    container_name: encargado
-    ports:
-      - "8090:8090"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_encargado?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      JWT_SECRET: 1234567890123456789012345678901234567890
-    networks:
-      - backend-network
-  inventario:
-    build: ./ms-inventario
-    container_name: inventario
-    ports:
-      - "8086:8086"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_inventario?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      JWT_SECRET: 1234567890123456789012345678901234567890
-    networks:
-      - backend-network
-
-  mantenimiento:
-    build: ./ms-mantenimiento
-    container_name: mantenimiento
-    ports:
-      - "8089:8089"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_mantenimiento?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      JWT_SECRET: 1234567890123456789012345678901234567890
-    networks:
-      - backend-network
-
-  rutina:
-    build: ./ms-rutina
-    container_name: rutina
-    ports:
-      - "8088:8088"
-    depends_on:
-      - mysql-planes
-      - ms-eureka
-    environment:
-      DB_HOST: mysql-rutina
-      DB_PORT: 3306
-      DB_NAME: db_rutina
-      DB_USER: root
-      DB_PASSWORD: root
-      JWT_SECRET: "1234567890123456789012345678901234567890"
-      EUREKA_URL: http://ms-eureka:8761/eureka/
-    networks:
-      - backend-network
-  sede:
-    build: ./ms-sede
-    container_name: sede
-    ports:
-      - "8084:8084"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_sede?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      JWT_SECRET: 1234567890123456789012345678901234567890
-    networks:
-      - backend-network
-  planes:
-    build: ./ms_planes
-    container_name: planes
-    ports:
-      - "8087:8087"
-    depends_on:
-      - mysql-planes
-      - ms-eureka
-    environment:
-      DB_HOST: mysql-planes
-      DB_PORT: 3306
-      DB_NAME: db_planes
-      DB_USER: root
-      DB_PASSWORD: root
-      JWT_SECRET: "1234567890123456789012345678901234567890"
-      EUREKA_URL: http://ms-eureka:8761/eureka/
-    networks:
-      - backend-network
-
+  # ---- MICROSERVICIO AUTH ----
   auth:
     build: ./ms-auth
     container_name: auth
     restart: unless-stopped
     ports:
       - "8082:8082"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-auth:
+        condition: service_healthy
     environment:
       DB_HOST: mysql-auth
       DB_PORT: 3306
@@ -149,12 +64,102 @@ services:
       DB_PASSWORD: root
       JWT_SECRET: "1234567890123456789012345678901234567890"
       EUREKA_URL: http://ms-eureka:8761/eureka/
-    depends_on:
-      - mysql-auth
-      - ms-eureka
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- MICROSERVICIO CLIENTE ----
+  cliente:
+    build: ./ms-cliente
+    container_name: cliente
+    ports:
+      - "8083:8083"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-cliente:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql-cliente
+      DB_PORT: 3306
+      DB_NAME: ms-cliente
+      DB_USER: root
+      DB_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Ajustado a 256m
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Ajustado a 350M
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- MICROSERVICIO RUTINA ----
+  rutina:
+    build: ./ms-rutina
+    container_name: rutina
+    ports:
+      - "8088:8088"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-rutinas:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql-rutinas
+      DB_PORT: 3306
+      DB_NAME: ms-rutinas
+      DB_USER: root
+      DB_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Ajustado a 256m
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Ajustado a 350M
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- MICROSERVICIO PLANES ----
+  planes:
+    build: ./ms_planes
+    container_name: planes
+    ports:
+      - "8087:8087"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-planes:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql-planes
+      DB_PORT: 3306
+      DB_NAME: ms-planes
+      DB_USER: root
+      DB_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Ajustado a 256m
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Ajustado a 350M
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- MICROSERVICIO CLASE ----
   clase:
     build: ./ms-clase
     container_name: clase
@@ -169,12 +174,22 @@ services:
       DB_PASSWORD: root
       JWT_SECRET: "1234567890123456789012345678901234567890"
       EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Añadido para restringir el uso libre de RAM de la PC
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
-      - mysql-clase
-      - ms-eureka
+      mysql-clase:
+        condition: service_healthy
+      ms-eureka:
+        condition: service_healthy
+    # 🔄 MODIFICADO: Añadido límite explícito para la evaluación
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- MICROSERVICIO ENTRENADOR ----
   entrenador:
     build: ./ms-entrenador
     container_name: entrenador
@@ -189,12 +204,22 @@ services:
       DB_PASSWORD: root
       JWT_SECRET: "1234567890123456789012345678901234567890"
       EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Añadido para estandarizar el proceso interno de Java
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
-      - mysql-entrenador
-      - ms-eureka
+      mysql-entrenador:
+        condition: service_healthy
+      ms-eureka:
+        condition: service_healthy
+    # 🔄 MODIFICADO: Añadido límite explícito
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- MICROSERVICIO INSCRIPCION CLASE ----
   inscripcion-clase:
     build: ./ms-inscripcion-clase
     container_name: inscripcion-clase
@@ -209,32 +234,134 @@ services:
       DB_PASSWORD: root
       JWT_SECRET: "1234567890123456789012345678901234567890"
       EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Añadido para equiparar al resto de los componentes
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
-      - mysql-inscripcionclase
-      - ms-eureka
-    networks:
-      - backend-network
-  ms-eureka:
-    build: ./ms-eureka
-    container_name: ms-eureka
-    restart: unless-stopped
-    ports:
-      - "8761:8761"
-    networks:
-      - backend-network
-  ms-gateway:
-    build: ./ms-gateway
-    container_name: ms-gateway
-    restart: unless-stopped
-    ports:
-      - "8099:8099"
-    environment:
-      EUREKA_URL: http://ms-eureka:8761/eureka/
-    depends_on:
-      - ms-eureka
+      mysql-inscripcionclase:
+        condition: service_healthy
+      ms-eureka:
+        condition: service_healthy
+    # 🔄 MODIFICADO: Añadido límite explícito
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- MICROSERVICIO ENCARGADO ----
+  encargado:
+    build: ./ms-encargado
+    container_name: encargado
+    ports:
+      - "8090:8090"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-encargado:
+        condition: service_healthy
+    environment:
+      # 🔄 MODIFICADO: Apunta de forma precisa al contenedor 'mysql-encargado'
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-encargado:3306/db_encargado?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Inyectado punto dulce seguro
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Inyectado punto dulce seguro
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- MICROSERVICIO INVENTARIO ----
+  inventario:
+    build: ./ms-inventario
+    container_name: inventario
+    ports:
+      - "8086:8086"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-inventario:
+        condition: service_healthy
+    environment:
+      # 🔄 MODIFICADO: Apunta de forma precisa al contenedor 'mysql-inventario'
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-inventario:3306/db_inventario?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Inyectado punto dulce seguro
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Inyectado punto dulce seguro
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- MICROSERVICIO SEDE ----
+  sede:
+    build: ./ms-sede
+    container_name: sede
+    ports:
+      - "8084:8084"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-sede:
+        condition: service_healthy
+    environment:
+      # 🔄 MODIFICADO: Apunta de forma precisa al contenedor 'mysql-sede'
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-sede:3306/db_sede?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Inyectado punto dulce seguro
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Inyectado punto dulce seguro
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- MICROSERVICIO MANTENIMIENTO ----
+  mantenimiento:
+    build: ./ms-mantenimiento
+    container_name: mantenimiento
+    ports:
+      - "8089:8089"
+    depends_on:
+      ms-eureka:
+        condition: service_healthy
+      mysql-mantenimiento:
+        condition: service_healthy
+    environment:
+      # 🔄 MODIFICADO: Apunta de forma precisa al contenedor 'mysql-mantenimiento'
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-mantenimiento:3306/db_mantenimiento?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: "1234567890123456789012345678901234567890"
+      EUREKA_URL: http://ms-eureka:8761/eureka/
+      # 🔄 MODIFICADO: Inyectado punto dulce seguro
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          # 🔄 MODIFICADO: Inyectado punto dulce seguro
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- BASE DE DATOS: AUTH ----
   mysql-auth:
     image: mysql:8
     container_name: mysql-auth
@@ -246,50 +373,20 @@ services:
       - "3307:3306"
     volumes:
       - mysql_auth_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
-  mysql-clase:
-    image: mysql:8
-    container_name: mysql-clase
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-clase
-    ports:
-      - "3308:3306"
-    volumes:
-      - mysql_clase_data:/var/lib/mysql
-    networks:
-      - backend-network
-
-  mysql-entrenador:
-    image: mysql:8
-    container_name: mysql-entrenador
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: db_entrenador
-    ports:
-      - "3311:3306"
-    volumes:
-      - mysql_entrenador_data:/var/lib/mysql
-    networks:
-      - backend-network
-
-  mysql-inscripcionclase:
-    image: mysql:8
-    container_name: mysql-inscripcionclase
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-inscripcion_clase
-    ports:
-      - "3312:3306"
-    volumes:
-      - mysql_inscripcion_data:/var/lib/mysql
-    networks:
-      - backend-network
+  # ---- BASE DE DATOS: CLIENTE ----
   mysql-cliente:
     image: mysql:8
     container_name: mysql-cliente
@@ -301,8 +398,20 @@ services:
       - "3313:3306"
     volumes:
       - mysql_cliente_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
+
+  # ---- BASE DE DATOS: PLANES ----
   mysql-planes:
     image: mysql:8
     container_name: mysql-planes
@@ -314,8 +423,20 @@ services:
       - "3314:3306"
     volumes:
       - mysql_planes_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
+
+  # ---- BASE DE DATOS: RUTINAS ----
   mysql-rutinas:
     image: mysql:8
     container_name: mysql-rutinas
@@ -327,63 +448,208 @@ services:
       - "3315:3306"
     volumes:
       - mysql_rutinas_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- BASE DE DATOS: CLASE ----
+  mysql-clase:
+    image: mysql:8
+    container_name: mysql-clase
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ms-clase
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_clase_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- BASE DE DATOS: ENTRENADOR ----
+  mysql-entrenador:
+    image: mysql:8
+    container_name: mysql-entrenador
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ms-entrenador
+    ports:
+      - "3311:3306"
+    volumes:
+      - mysql_entrenador_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- BASE DE DATOS: INSCRIPCION CLASE ----
+  mysql-inscripcionclase:
+    image: mysql:8
+    container_name: mysql-inscripcionclase
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ms-inscripcion_clase
+    ports:
+      - "3312:3306"
+    volumes:
+      - mysql_inscripcion_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- BASE DE DATOS: ENCARGADO ----
   mysql-encargado:
     image: mysql:8
     container_name: mysql-encargado
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-encargado
+      MYSQL_DATABASE: db_encargado
     ports:
       - "3316:3306"
     volumes:
       - mysql_encargado_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- BASE DE DATOS: INVENTARIO ----
   mysql-inventario:
     image: mysql:8
     container_name: mysql-inventario
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-inventario
+      MYSQL_DATABASE: db_inventario
     ports:
       - "3317:3306"
     volumes:
       - mysql_inventario_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
+  # ---- BASE DE DATOS: SEDE ----
   mysql-sede:
     image: mysql:8
     container_name: mysql-sede
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-sede
+      MYSQL_DATABASE: db_sede
     ports:
       - "3318:3306"
     volumes:
       - mysql_sede_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+    networks:
+      - backend-network
+
+  # ---- BASE DE DATOS: MANTENIMIENTO ----
+  mysql-mantenimiento:
+    image: mysql:8
+    container_name: mysql-mantenimiento
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_mantenimiento
+    ports:
+      - "3319:3306"
+    volumes:
+      - mysql_mantenimiento_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 350M
     networks:
       - backend-network
 
 networks:
   backend-network:
     driver: bridge
+
 volumes:
-  proyectogimnasio_db_data:
   mysql_auth_data:
-  mysql_clase_data:
-  mysql_entrenador_data:
-  mysql_inscripcion_data:
   mysql_rutinas_data:
   mysql_planes_data:
   mysql_cliente_data:
+  mysql_clase_data:
+  mysql_entrenador_data:
+  mysql_inscripcion_data:
+  # 🔄 MODIFICADO: Registrados los volúmenes físicos para los nuevos microservicios
   mysql_encargado_data:
-  mysql_sede_data:
   mysql_inventario_data:
+  mysql_sede_data:
+  mysql_mantenimiento_data:

@@ -14,6 +14,6 @@ public class PlanesResponse {
     private BigDecimal precioPlan;
     private String descripcionPlan;
     private String beneficios;
-    private Long idPago;
+
 
 }

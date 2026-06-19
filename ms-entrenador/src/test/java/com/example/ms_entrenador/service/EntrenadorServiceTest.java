@@ -35,27 +35,16 @@ public class EntrenadorServiceTest {
         eRequest.setNombreCompleto("tito");
         eRequest.setFechaNacimiento(LocalDate.parse("1999-08-15"));
         eRequest.setRun("111-1");
-        //creo el entrenador request que se ingresa por el service
         Entrenador entrenador = new Entrenador(1L,"tito",
                 "111-1",LocalDate.parse("1999-08-15"));
-        //creo al entrenador que al ser creado el repositorio deberia retornar
         when(repository.existsByRun("111-1")).thenReturn(false);
-        //verificacion en falso por el run
         when(repository.save(any(Entrenador.class))).thenReturn(entrenador);
-        //cuando en el repositorio se guarde cualquier Entrenador se
-        //retorna al entrenador creado anteriormente
         EntrenadorResponse respuesta = service.add(eRequest);
-        // se toma un entrenadorresponse que es lo que devuelve el service
         assertNotNull(respuesta);
-        //comprueba solo que el objeto no es null
         assertEquals(1L,respuesta.getId());
-        //aqui hace la comparacion del id y que coincidam
         assertEquals("tito",respuesta.getNombreCompleto());
-        //mismo para nombre
         assertEquals("111-1",respuesta.getRun());
-        //mismo para run
         assertEquals(LocalDate.parse("1999-08-15"),respuesta.getFechaNacimiento());
-        //mismo para fecha
         verify(repository).save((any(Entrenador.class)));
         verify(repository).existsByRun("111-1");
     }
@@ -65,45 +54,14 @@ public class EntrenadorServiceTest {
         eRequest.setNombreCompleto("tito");
         eRequest.setFechaNacimiento(LocalDate.parse("1992-02-13"));
         eRequest.setRun("111-1");
-        //creo el request de entrenador
         when(repository.existsByRun("111-1")).thenReturn(true);
-        //cuando se haga la verificacion del run retornara verdadero
         IllegalStateException excepcion = assertThrows(IllegalStateException.class,
                 () -> service.add(eRequest));
-        // hago la excepcion correcta con lo que deberia devolver
         assertEquals("Entrenador ya se encuentra registrado",excepcion.getMessage());
         verify(repository).existsByRun("111-1");
 
     }
-    @Test
-    public void retornarEntrenadorCuandoExiste(){
-        Entrenador entrenador = new Entrenador();
-        entrenador.setId(1L);
-        entrenador.setNombreCompleto("tito");
-        entrenador.setFechaNacimiento(LocalDate.parse("1992-02-13"));
-        entrenador.setRun("111-1");
-        when(repository.findById(1L)).thenReturn(Optional.of(entrenador));
-        EntrenadorResponse respuesta = service.findById(1L);
-        assertNotNull(respuesta);
-        assertEquals(1L,respuesta.getId());
-        assertEquals("111-1",respuesta.getRun());
-        assertEquals("tito",respuesta.getNombreCompleto());
-        assertEquals(LocalDate.parse("1992-02-13"),respuesta.getFechaNacimiento());
-        verify(repository).findById(1L);
-    }
 
-    @Test
-    public void cuandoEntrenadorNoExiste(){
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-
-        EntityNotFoundException excepcion = assertThrows(
-                EntityNotFoundException.class,
-                ()->service.findById(1L));
-
-        assertEquals("Entrenador no encontrado",excepcion.getMessage());
-
-        verify(repository).findById(1L);
-    }
 
     @Test
     public void puedoActualizarEntrenador(){

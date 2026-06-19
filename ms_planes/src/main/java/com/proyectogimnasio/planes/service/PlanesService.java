@@ -4,13 +4,17 @@ import com.proyectogimnasio.planes.client.ClienteClient;
 import com.proyectogimnasio.planes.dto.*;
 import com.proyectogimnasio.planes.model.Pagos;
 import com.proyectogimnasio.planes.model.Planes;
+import com.proyectogimnasio.planes.model.Suscripcion;
 import com.proyectogimnasio.planes.repository.PagosRepository;
 import com.proyectogimnasio.planes.repository.PlanesRepository;
+import com.proyectogimnasio.planes.repository.SuscripcionRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
@@ -21,29 +25,26 @@ import static net.logstash.logback.argument.StructuredArguments.keyValue;
 public class PlanesService {
     private final PlanesRepository planesRepository;
     private final PagosRepository pagosRepository;
+    private final SuscripcionRepository suscripcionRepository;
     private final ClienteClient client;
 
-    public PlanesResponse addPlan(PlanesRequest p, String token) {
+    public PlanesResponse addPlan(PlanesRequest p) {
         log.info("Crear Planes", keyValue("nombre", p.getNombrePlan()));
-        Pagos pago = pagosRepository.findById(p.getIdPago())
-                .orElseThrow(() -> new EntityNotFoundException("El método de pago especificado no existe"));
-
         Planes planes1 = new Planes();
         planes1.setNombrePlan(p.getNombrePlan());
         planes1.setPrecioPlan(p.getPrecioPlan());
         planes1.setDescripcionPlan(p.getDescripcionPlan());
         planes1.setBeneficios(p.getBeneficios());
-        planes1.setIdPago(pago);
 
         Planes savePlan = planesRepository.save(planes1);
-        return mapToResponsePlan(savePlan, token);
+        return mapToResponsePlan(savePlan);
     }
 
-    public PagosResponse addPago(PagosRequest pa, String token) {
+    public PagosResponse addPago(PagosRequest pa) {
         log.info("Crear Pago", keyValue("tipo", pa.getTipoPago()));
 
 
-        var cliente = client.getCliente(pa.getIdCliente(), token);
+        var cliente = client.getCliente(pa.getIdCliente());
         if (cliente == null) {
             log.warn("Cliente no existe", keyValue("idCliente", pa.getIdCliente()));
             throw new EntityNotFoundException("El cliente especificado no existe en el sistema");
@@ -60,53 +61,50 @@ public class PlanesService {
 
         Pagos savePago = pagosRepository.save(pagos1);
         log.info("Metodo de pago creado correctamente", keyValue("id", savePago.getId()));
-        return mapToResponsePago(savePago, token);
+        return mapToResponsePago(savePago);
     }
 
-    public PlanesResponse findByIdPlan(Long id, String token) {
+    public PlanesResponse findByIdPlan(Long id) {
         log.info("Obtener id de Planes", keyValue("id", id));
         Planes planes1 = planesRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Plan no Existe"));
-        return mapToResponsePlan(planes1, token);
+        return mapToResponsePlan(planes1);
     }
 
-    public PagosResponse findByIdPago(Long id, String token) {
+    public PagosResponse findByIdPago(Long id) {
         log.info("Buscar metodo de pago", keyValue("idPago", id));
         Pagos pago = pagosRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Metodo de pago no encontrado"));
-        return mapToResponsePago(pago, token);
+        return mapToResponsePago(pago);
     }
 
-    public List<PlanesResponse> getAllPlanes(String token) {
-        return planesRepository.findAll().stream().map(planes -> mapToResponsePlan(planes, token)).toList();
+    public List<PlanesResponse> getAllPlanes() {
+        return planesRepository.findAll().stream().map(this::mapToResponsePlan).toList();
     }
 
-    public List<PagosResponse> getAllPagos(String token) {
-        return pagosRepository.findAll().stream().map(pagos -> mapToResponsePago(pagos, token)).toList();
+    public List<PagosResponse> getAllPagos() {
+        return pagosRepository.findAll().stream().map(this::mapToResponsePago).toList();
     }
 
-    public PlanesResponse updatePlan(Long id, PlanesRequest p, String token) {
+    public PlanesResponse updatePlan(Long id, PlanesRequest p) {
         log.info("Actualizar Planes", keyValue("idPlan", id));
         Planes planes1 = planesRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Plan no encontrado"));
 
-        Pagos pago = pagosRepository.findById(p.getIdPago())
-                .orElseThrow(() -> new EntityNotFoundException("El método de pago especificado no existe"));
 
         planes1.setNombrePlan(p.getNombrePlan());
         planes1.setPrecioPlan(p.getPrecioPlan());
         planes1.setDescripcionPlan(p.getDescripcionPlan());
         planes1.setBeneficios(p.getBeneficios());
-        planes1.setIdPago(pago);
 
         Planes updatePlan = planesRepository.save(planes1);
         log.info("Plan actualizado correctamente", keyValue("idPlan", updatePlan.getId()));
-        return mapToResponsePlan(updatePlan, token);
+        return mapToResponsePlan(updatePlan);
     }
 
-    public PagosResponse updatePago(Long id, PagosRequest pa, String token) {
+    public PagosResponse updatePago(Long id, PagosRequest pa) {
         Pagos pagos1 = pagosRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("No se ha encontrado el pago"));
         log.info("Actualizar Pago", keyValue("idPago", id));
 
-        var cliente = client.getCliente(pa.getIdCliente(), token);
+        var cliente = client.getCliente(pa.getIdCliente());
         if (cliente == null) {
             log.warn("Cliente no encontrado", keyValue("idCliente", pa.getIdCliente()));
             throw new EntityNotFoundException("Cliente no encontrado");
@@ -122,7 +120,7 @@ public class PlanesService {
 
         Pagos updatePago = pagosRepository.save(pagos1);
         log.info("Metodo de pago actualizado correctamente", keyValue("idPago", updatePago.getId()));
-        return mapToResponsePago(updatePago, token);
+        return mapToResponsePago(updatePago);
     }
 
     public void deletePlan(Long id) {
@@ -140,19 +138,107 @@ public class PlanesService {
         }
         pagosRepository.deleteById(id);
     }
+    @Transactional
+    public SuscripcionResponse crearSuscripcion(SuscripcionRequest request) {
+        Planes plan = planesRepository.findById(request.getIdPlan())
+                .orElseThrow(() -> new EntityNotFoundException("Plan no encontrado"));
 
-    private PlanesResponse mapToResponsePlan(Planes p, String token) {
+        Pagos pago = new Pagos();
+        pago.setTipoPago(request.getPago().getTipoPago());
+        pago.setNumTarjeta(request.getPago().getNumTarjeta());
+        pago.setFechaVencimiento(request.getPago().getFechaVencimiento());
+        pago.setCvc(request.getPago().getCvc());
+        pago.setDireccionFacturacion(request.getPago().getDireccionFacturacion());
+        pago.setCodigoPostal(request.getPago().getCodigoPostal());
+        pago.setIdCliente(request.getIdCliente());
+
+        pago = pagosRepository.save(pago);
+
+        Suscripcion suscripcion = new Suscripcion();
+        suscripcion.setIdCliente(request.getIdCliente());
+        suscripcion.setPlan(plan);
+        suscripcion.setPago(pago);
+        suscripcion.setFechaInicio(LocalDate.now());
+        suscripcion.setFechaFin(LocalDate.now().plusMonths(1));
+        suscripcion.setEstado("ACTIVA");
+
+        Suscripcion suscripcionGuardada = suscripcionRepository.save(suscripcion);
+
+        return mapToResponseSuscripcion(suscripcionGuardada);
+    }
+    public List<SuscripcionResponse> getAllSuscripciones() {
+        log.info("Obteniendo listado de todas las suscripciones");
+        return suscripcionRepository.findAll().stream()
+                .map(this::mapToResponseSuscripcion)
+                .toList();
+    }
+
+    public SuscripcionResponse getSuscripcionByCliente(Long idCliente) {
+        log.info("Buscando suscripción del cliente", keyValue("idCliente", idCliente));
+        Suscripcion suscripcion = suscripcionRepository.findByIdCliente(idCliente)
+                .orElseThrow(() -> new EntityNotFoundException("El cliente no tiene ninguna suscripción registrada"));
+        return mapToResponseSuscripcion(suscripcion);
+    }
+
+    @Transactional
+    public SuscripcionResponse updateSuscripcion(Long id, String nuevoEstado) {
+        log.info("Actualizando estado de suscripción", keyValue("idSuscripcion", id), keyValue("nuevoEstado", nuevoEstado));
+
+        Suscripcion suscripcion = suscripcionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Suscripción no encontrada"));
+
+        suscripcion.setEstado(nuevoEstado.toUpperCase());
+
+        if ("CANCELADA".equals(suscripcion.getEstado())) {
+            suscripcion.setFechaFin(java.time.LocalDate.now());
+        }
+
+        Suscripcion actualizada = suscripcionRepository.save(suscripcion);
+        return mapToResponseSuscripcion(actualizada);
+    }
+
+    @Transactional
+    public void deleteSuscripcion(Long id) {
+        log.info("Eliminando suscripción del sistema", keyValue("idSuscripcion", id));
+        if (!suscripcionRepository.existsById(id)) {
+            throw new EntityNotFoundException("No se puede eliminar una suscripción inexistente");
+        }
+        suscripcionRepository.deleteById(id);
+    }
+    private SuscripcionResponse mapToResponseSuscripcion(Suscripcion s) {
+        ClienteResponse datosCliente;
+        try {
+            datosCliente = client.getCliente(s.getIdCliente());
+        } catch (Exception e) {
+            log.error("Fallo de comunicación al enriquecer datos de cliente", e);
+            datosCliente = new ClienteResponse();
+            datosCliente.setNombres("Desconocido (Fallo de red)");
+            datosCliente.setApellidos("");
+        }
+
+        return SuscripcionResponse.builder()
+                .id(s.getId())
+                .idCliente(s.getIdCliente())
+                .plan(mapToResponsePlan(s.getPlan()))
+                .pago(mapToResponsePago(s.getPago()))
+                .cliente(datosCliente)
+                .fechaInicio(s.getFechaInicio())
+                .fechaFin(s.getFechaFin())
+                .estado(s.getEstado())
+                .build();
+        }
+
+    private PlanesResponse mapToResponsePlan(Planes p) {
         return PlanesResponse.builder()
                 .id(p.getId())
                 .nombrePlan(p.getNombrePlan())
                 .precioPlan(p.getPrecioPlan())
                 .descripcionPlan(p.getDescripcionPlan())
                 .beneficios(p.getBeneficios())
-                .idPago(p.getIdPago() != null ? p.getIdPago().getId() : null)
                 .build();
     }
 
-    private PagosResponse mapToResponsePago(Pagos pa, String token) {
+    private PagosResponse mapToResponsePago(Pagos pa) {
         return PagosResponse.builder()
                 .id(pa.getId())
                 .tipoPago(pa.getTipoPago())

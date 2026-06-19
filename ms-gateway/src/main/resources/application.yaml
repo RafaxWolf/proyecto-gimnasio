@@ -1,0 +1,114 @@
+spring:
+  application:
+    name: ms-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: ms-auth
+              uri: http://auth:8082
+              predicates:
+                - Path=/auth/**
+
+            - id: ms-entrenador
+              uri: lb://ms-entrenador
+              predicates:
+                - Path=/api/v1/entrenadores/**
+
+            - id: ms-clase
+              uri: lb://ms-clase
+              predicates:
+                - Path=/api/v1/clases/**
+
+            - id: ms-inscripcion-clase
+              uri: lb://ms-inscripcion-clase
+              predicates:
+                - Path=/api/v1/inscripcion-clases/**
+
+            - id: ms-cliente
+              uri: http://cliente:8083
+              predicates:
+                - Path=/api/v3/clientes/**
+
+            - id: ms-planes-catalogo
+              uri: http://planes:8087
+              predicates:
+                - Path=/api/v3/planes/**
+
+            - id: ms-planes-pagos
+              uri: http://planes:8087
+              predicates:
+                - Path=/api/v3/pagos/**
+
+            - id: ms-planes-suscripciones
+              uri: http://planes:8087
+              predicates:
+                - Path=/api/v3/suscripciones/**
+
+            - id: ms-rutina-rutinas
+              uri: http://rutina:8088
+              predicates:
+                - Path=/api/v3/rutinas/**
+            - id: ms-rutina-ejercicios
+              uri: http://rutina:8088
+              predicates:
+                - Path=/api/v3/ejercicios/**
+
+            - id: ms-sede
+              uri: lb://ms-sede
+              predicates:
+                - Path=/api/v1/sede/**
+
+            - id: ms-encargado
+              uri: lb://ms-encargado
+              predicates:
+                - Path=/api/v1/encargado/**
+
+            - id: ms-inventario
+              uri: lb://ms-inventario
+              predicates:
+                - Path=/api/v2/inventario/**
+
+            - id: ms-mantenimiento
+              uri: lb://ms-mantenimiento
+              predicates:
+                - Path=/api/v1/mantenimiento/**
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  microservices:
+    definitions:
+      - name: ms-auth
+        url: /auth/v3/api-docs
+      - name: ms-cliente
+        url: /api/v3/clientes/v3/api-docs
+      - name: ms-planes
+        url: /api/v3/planes/v3/api-docs
+      - name: ms-rutina
+        url: /api/v3/rutinas/v3/api-docs
+      - name: ms-entrenador
+        url: /api/v1/entrenadores/v3/api-docs
+      - name: ms-clase
+        url: /api/v1/clases/v3/api-docs
+      - name: ms-inscripcion-clase
+        url: /api/v1/inscripcion-clases/v3/api-docs
+      - name: ms-sede
+        url: /api/v1/sede/v3/api-docs
+      - name: ms-encargado
+        url: /api/v1/encargado/v3/api-docs
+      - name: ms-inventario
+        url: /api/v2/inventario/v3/api-docs
+      - name: ms-mantenimiento
+        url: /api/v1/mantenimiento/v3/api-docs
+
+server:
+  port: 8099
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true

@@ -9,7 +9,6 @@ import com.proyectogimnasio.planes.service.PlanesService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,9 +39,9 @@ class PagosControllerTest {
 
     private PagosRequest requestValido;
     private PagosResponse responseMock;
+
     @MockitoBean
     private JwtUtil jwtUtil;
-
 
     @BeforeEach
     public void setUp() {
@@ -70,23 +69,22 @@ class PagosControllerTest {
         objectMapper.registerModule(new JavaTimeModule());
     }
 
-
     @Test
     @WithMockUser(roles = "ADMIN")
     public void debeAgregarPagoCuandoAdminYRequestValido() throws Exception {
-        when(pagosService.addPago(any(PagosRequest.class), any())).thenReturn(responseMock);
+        when(pagosService.addPago(any(PagosRequest.class))).thenReturn(responseMock);
 
         mockMvc.perform(post("/api/v2/pagos")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer token-valido")
+                        .param("token", "Bearer token-valido")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestValido)))
-                .andExpect(status().isCreated()) // Espera 201
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Plan creado"))
                 .andExpect(jsonPath("$.data.id").value(1L));
     }
-
 
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -101,32 +99,31 @@ class PagosControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-
     @Test
     @WithMockUser(roles = "USER")
     public void debeObtenerPagoPorIdConEnlacesHateoas() throws Exception {
-        when(pagosService.findByIdPago(anyLong(), any())).thenReturn(responseMock);
+        when(pagosService.findByIdPago(anyLong())).thenReturn(responseMock);
 
         mockMvc.perform(get("/api/v2/pagos/1")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer token-valido")
+                        .param("token", "Bearer token-valido")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Metodo de Pago obtenido"))
-                .andExpect(jsonPath("$.data.links[?(@.rel=='self')].href").exists())
-                .andExpect(jsonPath("$.data.links[?(@.rel=='all')].href").exists())
-                .andExpect(jsonPath("$.data.links[?(@.rel=='update')].href").exists())
-                .andExpect(jsonPath("$.data.links[?(@.rel=='delete')].href").exists());
+                .andExpect(jsonPath("$.data._links.self.href").exists())
+                .andExpect(jsonPath("$.data._links.all.href").exists())
+                .andExpect(jsonPath("$.data._links.update.href").exists())
+                .andExpect(jsonPath("$.data._links.delete.href").exists());
     }
-
 
     @Test
     @WithMockUser(roles = "USER")
     public void debeListarTodosLosPagos() throws Exception {
-        when(pagosService.getAllPagos(anyString())).thenReturn(List.of(responseMock));
+        when(pagosService.getAllPagos()).thenReturn(List.of(responseMock));
 
         mockMvc.perform(get("/api/v2/pagos")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer token-valido")
+                        .header("Authorization", "Bearer token-valido")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -134,14 +131,14 @@ class PagosControllerTest {
                 .andExpect(jsonPath("$.data[0].id").value(1L));
     }
 
-
     @Test
     @WithMockUser(roles = "ADMIN")
     public void debeActualizarPagoCuandoAdminYRequestValido() throws Exception {
-        when(pagosService.updatePago(anyLong(), any(PagosRequest.class), any())).thenReturn(responseMock);
+        when(pagosService.updatePago(anyLong(), any(PagosRequest.class))).thenReturn(responseMock);
 
         mockMvc.perform(put("/api/v2/pagos/1")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer token-valido")
+                        .param("token", "Bearer token-valido")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestValido)))
@@ -149,7 +146,6 @@ class PagosControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1L));
     }
-
 
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -163,5 +159,4 @@ class PagosControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Método de pago eliminado"));
     }
-
 }

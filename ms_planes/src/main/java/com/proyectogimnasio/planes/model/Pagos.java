@@ -21,6 +21,6 @@ public class Pagos {
     private Integer cvc;
     private String direccionFacturacion;
     private String codigoPostal;
-    @JoinColumn(name = "nombre_cliente_id")
+    @Column(name = "id_cliente")
     private Long idCliente;
 }
